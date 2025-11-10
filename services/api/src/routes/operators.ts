@@ -1,4 +1,49 @@
 import { Router } from "express";
+import { pool } from "../db/pool";
+const router = Router();
+
+router.get("/", async (_req, res) => {
+  const { rows } = await pool.query(`SELECT * FROM operadores ORDER BY nombre`);
+  res.json(rows);
+});
+
+router.post("/", async (req, res) => {
+  const o = req.body;
+  const { rows } = await pool.query(
+    `INSERT INTO operadores (nombre,celular,email,dni,direccion)
+     VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+    [o.nombre, o.celular, o.email ?? null, o.dni ?? null, o.direccion ?? null]
+  );
+  res.status(201).json(rows[0]);
+});
+
+router.patch("/:id/toggle", async (req, res) => {
+  const id = req.params.id;
+  const current = await pool.query(`SELECT activo FROM operadores WHERE id=$1`, [id]);
+  const next = !current.rows[0]?.activo;
+  const { rows } = await pool.query(`UPDATE operadores SET activo=$1 WHERE id=$2 RETURNING *`, [next, id]);
+  res.json(rows[0]);
+});
+
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const o = req.body;
+  const { rows } = await pool.query(
+    `UPDATE operadores SET nombre=$1, celular=$2, email=$3, dni=$4, direccion=$5 WHERE id=$6 RETURNING *`,
+    [o.nombre, o.celular, o.email ?? null, o.dni ?? null, o.direccion ?? null, id]
+  );
+  res.json(rows[0]);
+});
+
+router.delete("/:id", async (req, res) => {
+  await pool.query(`DELETE FROM operadores WHERE id=$1`, [req.params.id]);
+  res.status(204).end();
+});
+
+export default router;
+
+
+/*import { Router } from "express";
 import { randomUUID } from "crypto";
 
 type Operador = {
@@ -61,3 +106,4 @@ r.delete("/:id", (req, res) => {
 });
 
 export default r;
+*/

@@ -9,7 +9,10 @@ services:
       POSTGRES_USER: bodegia
       POSTGRES_PASSWORD: bodegia
     ports: ["5432:5432"]
-    volumes: [ "pgdata:/var/lib/postgresql/data" ]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Auto-init cuando el volumen está vacío
+      - ../../services/api/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
 
   api:
     build:
@@ -26,8 +29,6 @@ services:
       - ../../apps/web/.env
     depends_on: [ api ]
     ports: ["5173:5173"]
-    # (opcional dev) volumes:
-    # - ../../apps/web:/app
 
 volumes:
   pgdata:

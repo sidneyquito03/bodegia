@@ -3,9 +3,21 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-const r = Router();
+const router = Router();
+const uploadDir = path.join(process.cwd(), "uploads");
+fs.mkdirSync(uploadDir, { recursive: true });
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+const upload = multer({ dest: uploadDir });
+
+router.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file" });
+  const url = `/uploads/${req.file.filename}`; // estático en index.ts
+  res.status(201).json({ url });
+});
+
+export default router;
+
+/*const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -40,4 +52,4 @@ r.post("/", upload.single("file"), (req, res) => {
   res.json({ url });
 });
 
-export default r;
+export default r;*/
