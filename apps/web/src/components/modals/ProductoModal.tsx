@@ -8,13 +8,15 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Producto } from "@/hooks/useInventario"; // puedes migrar luego este tipo a /services/inventory
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X } from "lucide-react";
+
+import { Producto } from "@/hooks/useInventario"; 
 import { uploadPublicFile } from "@/services/files";
 import { listCategorias } from "@/services/inventory";
+import { listProveedores } from "@/services/providers";
 
-interface ProductoModalProps {
+export interface ProductoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (producto: Omit<Producto, "id">) => void;
@@ -23,7 +25,10 @@ interface ProductoModalProps {
 
 export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoModalProps) => {
   const { toast } = useToast();
+
   const [categorias, setCategorias] = useState<string[]>([]);
+  const [proveedores, setProveedores] = useState<{ id: string; nombre: string; activo: boolean }[]>([]);
+
   const [nuevaCategoria, setNuevaCategoria] = useState("");
   const [mostrarNuevaCategoria, setMostrarNuevaCategoria] = useState(false);
 
@@ -37,23 +42,37 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
     precio_costo: 0,
     precio_venta: 0,
     categoria: "",
-    estado: "Disponible",
+    estado: "Disponible" as Producto["estado"],
     imagen_url: null as string | null,
+
+    // nuevos campos
+    proveedor_id: null as string | null,
+    fecha_vencimiento: null as string | null, // yyyy-mm-dd
+    marca: null as string | null,
+    medida_peso: null as string | null,
+    stock_critico: 10,
+    stock_bajo: 20,
   });
 
+  // cargar categorías y proveedores
   useEffect(() => {
-    // cargar categorías desde API
     (async () => {
       try {
         const cats = await listCategorias();
         setCategorias(cats.map((c) => c.toLowerCase().trim()).sort());
       } catch (e) {
-        // si falla, no bloquea el modal
         console.error("categorías:", e);
+      }
+      try {
+        const provs = await listProveedores();
+        setProveedores(provs.filter(p => p.activo));
+      } catch (e) {
+        console.error("proveedores:", e);
       }
     })();
   }, []);
 
+  // hidratar form cuando llega producto o al abrir/cerrar
   useEffect(() => {
     if (producto) {
       setFormData({
@@ -65,6 +84,13 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         categoria: producto.categoria,
         estado: (producto as any).estado ?? "Disponible",
         imagen_url: (producto as any).imagen_url ?? null,
+
+        proveedor_id: (producto as any).proveedor_id ?? null,
+        fecha_vencimiento: (producto as any).fecha_vencimiento ?? null,
+        marca: (producto as any).marca ?? null,
+        medida_peso: (producto as any).medida_peso ?? null,
+        stock_critico: (producto as any).stock_critico ?? 10,
+        stock_bajo: (producto as any).stock_bajo ?? 20,
       });
       setImagenPreview((producto as any).imagen_url ?? null);
     } else {
@@ -77,6 +103,13 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         categoria: "",
         estado: "Disponible",
         imagen_url: null,
+
+        proveedor_id: null,
+        fecha_vencimiento: null,
+        marca: null,
+        medida_peso: null,
+        stock_critico: 10,
+        stock_bajo: 20,
       });
       setImagenPreview(null);
     }
@@ -116,6 +149,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       });
       return;
     }
+
     if (formData.precio_venta < formData.precio_costo) {
       toast({
         title: "Revisa precios",
@@ -139,6 +173,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       }
     }
 
+    // Normalizamos/parseamos
     const payload: Omit<Producto, "id"> = {
       nombre: formData.nombre.trim(),
       codigo: formData.codigo.trim(),
@@ -146,9 +181,15 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       precio_costo: Number(formData.precio_costo) || 0,
       precio_venta: Number(formData.precio_venta) || 0,
       categoria: formData.categoria.toLowerCase().trim(),
-      estado: formData.estado as any,
-      // @ts-ignore (tu tipo Producto quizá aún no tiene esta propiedad)
+      estado: formData.estado,
       imagen_url: imagenUrl ?? null,
+
+      proveedor_id: formData.proveedor_id || null,
+      fecha_vencimiento: formData.fecha_vencimiento || null,
+      marca: formData.marca?.trim() || null,
+      medida_peso: formData.medida_peso?.trim() || null,
+      stock_critico: Number(formData.stock_critico) || 10,
+      stock_bajo: Number(formData.stock_bajo) || 20,
     };
 
     onSave(payload);
@@ -156,7 +197,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+  <Dialog open={isOpen} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{producto ? "Editar Producto" : "Agregar Producto"}</DialogTitle>
@@ -232,9 +273,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                 type="number"
                 min="0"
                 value={formData.stock}
-                onChange={(e) =>
-                  setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })
-                }
+                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
                 required
               />
             </div>
@@ -246,12 +285,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                 step="0.01"
                 min="0"
                 value={formData.precio_costo}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    precio_costo: parseFloat(e.target.value) || 0,
-                  })
-                }
+                onChange={(e) => setFormData({ ...formData, precio_costo: parseFloat(e.target.value) || 0 })}
                 required
               />
             </div>
@@ -263,79 +297,91 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                 step="0.01"
                 min="0"
                 value={formData.precio_venta}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    precio_venta: parseFloat(e.target.value) || 0,
-                  })
-                }
+                onChange={(e) => setFormData({ ...formData, precio_venta: parseFloat(e.target.value) || 0 })}
                 required
               />
             </div>
           </div>
 
+          {/* Marca / Medida */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="categoria">Categoría *</Label>
-              {!mostrarNuevaCategoria ? (
-                <div className="flex gap-2">
-                  <Select
-                    value={formData.categoria}
-                    onValueChange={(value) => {
-                      if (value === "_nueva") setMostrarNuevaCategoria(true);
-                      else setFormData({ ...formData, categoria: value });
-                    }}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Seleccionar categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categorias.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="_nueva">+ Nueva Categoría</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Input
-                    value={nuevaCategoria}
-                    onChange={(e) => setNuevaCategoria(e.target.value)}
-                    placeholder="Nueva categoría"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        agregarNuevaCategoria();
-                      }
-                    }}
-                  />
-                  <Button type="button" size="sm" onClick={agregarNuevaCategoria} disabled={!nuevaCategoria.trim()}>
-                    ✓
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setMostrarNuevaCategoria(false);
-                      setNuevaCategoria("");
-                    }}
-                  >
-                    ✗
-                  </Button>
-                </div>
-              )}
+              <Label htmlFor="marca">Marca</Label>
+              <Input
+                id="marca"
+                value={formData.marca || ""}
+                onChange={(e) => setFormData({ ...formData, marca: e.target.value || null })}
+                placeholder="Ej: Gloria, Coca-Cola, etc."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="medida_peso">Medida/Peso</Label>
+              <Input
+                id="medida_peso"
+                value={formData.medida_peso || ""}
+                onChange={(e) => setFormData({ ...formData, medida_peso: e.target.value || null })}
+                placeholder="Ej: 500g, 1L, 12 unid"
+              />
+            </div>
+          </div>
+
+          {/* Proveedor / Vencimiento / Estado */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="proveedor">Proveedor</Label>
+              <Select
+                value={formData.proveedor_id ?? ""}
+                onValueChange={(value) => setFormData({ ...formData, proveedor_id: value || null })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar proveedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin proveedor</SelectItem>
+                  {proveedores.filter(p => p.activo).map((prov) => (
+                    <SelectItem key={prov.id} value={prov.id}>
+                      {prov.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="fecha_vencimiento">Fecha de Vencimiento</Label>
+              <Input
+                id="fecha_vencimiento"
+                type="date"
+                value={formData.fecha_vencimiento ?? ""}
+                onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value || null })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="stock_critico">Stock Crítico</Label>
+              <Input
+                id="stock_critico"
+                type="number"
+                min="0"
+                value={formData.stock_critico}
+                onChange={(e) => setFormData({ ...formData, stock_critico: parseInt(e.target.value) || 10 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stock_bajo">Stock Bajo</Label>
+              <Input
+                id="stock_bajo"
+                type="number"
+                min="0"
+                value={formData.stock_bajo}
+                onChange={(e) => setFormData({ ...formData, stock_bajo: parseInt(e.target.value) || 20 })}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="estado">Estado</Label>
-              <Select
-                value={formData.estado}
-                onValueChange={(value) => setFormData({ ...formData, estado: value })}
-              >
+              <Select value={formData.estado} onValueChange={(value) => setFormData({ ...formData, estado: value as Producto["estado"] })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -344,9 +390,66 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                   <SelectItem value="Stock Bajo">Stock Bajo</SelectItem>
                   <SelectItem value="Stock Crítico">Stock Crítico</SelectItem>
                   <SelectItem value="Agotado">Agotado</SelectItem>
+                  <SelectItem value="Vencido">Vencido</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Categoría */}
+          <div className="space-y-2">
+            <Label htmlFor="categoria">Categoría *</Label>
+            {!mostrarNuevaCategoria ? (
+              <div className="flex gap-2">
+                <Select
+                  value={formData.categoria}
+                  onValueChange={(value) => {
+                    if (value === "_nueva") setMostrarNuevaCategoria(true);
+                    else setFormData({ ...formData, categoria: value });
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Seleccionar categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="_nueva">+ Nueva Categoría</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={nuevaCategoria}
+                  onChange={(e) => setNuevaCategoria(e.target.value)}
+                  placeholder="Nueva categoría"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      agregarNuevaCategoria();
+                    }
+                  }}
+                />
+                <Button type="button" size="sm" onClick={agregarNuevaCategoria} disabled={!nuevaCategoria.trim()}>
+                  ✓
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setMostrarNuevaCategoria(false);
+                    setNuevaCategoria("");
+                  }}
+                >
+                  ✗
+                </Button>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

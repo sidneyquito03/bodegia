@@ -1,6 +1,13 @@
 import { api } from "@/lib/api";
 
-export type Producto = {
+export type EstadoProducto =
+  | "Disponible"
+  | "Stock Bajo"
+  | "Stock Crítico"
+  | "Agotado"
+  | "Vencido";
+
+export interface Producto {
   id: string;
   nombre: string;
   codigo: string;
@@ -8,71 +15,125 @@ export type Producto = {
   precio_costo: number;
   precio_venta: number;
   categoria: string;
-  estado?: "Disponible" | "Stock Bajo" | "Stock Crítico";
-  fecha_vencimiento?: string | null;
-  fecha_ingreso?: string | null; // la pone el backend (created_at)
+  estado: EstadoProducto;
+  imagen_url?: string | null;
+  proveedor_id?: string | null;
+  fecha_vencimiento?: string | null; 
   marca?: string | null;
-  unidad?: string | null; //“unidad”, “caja”, “kg”
-};
+  medida_peso?: string | null;
+  stock_critico?: number;
+  stock_bajo?: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
-export type HistorialPrecio = {
-  id: string;
+export interface CrearProductoDTO {
+  nombre: string;
+  codigo: string;
+  stock: number;
+  precio_costo: number;
+  precio_venta: number;
+  categoria: string;
+  estado?: EstadoProducto;
+  imagen_url?: string | null;
+  proveedor_id?: string | null;
+  proveedor_nombre?: string | null; 
+  fecha_vencimiento?: string | null;
+  marca?: string | null;
+  medida_peso?: string | null;
+  stock_critico?: number;
+  stock_bajo?: number;
+}
+
+export interface ActualizarProductoDTO extends Partial<CrearProductoDTO> {}
+
+export interface ImportProductosInput extends CrearProductoDTO {}
+export interface ImportProductosResult {
+  inserted: number;
+  updated: number;
+  errors?: number;
+  details?: Array<{ index: number; message: string }>;
+}
+
+export interface PriceHistoryDTO {
   producto_id: string;
   precio_costo_anterior: number;
   precio_venta_anterior: number;
   precio_costo_nuevo: number;
   precio_venta_nuevo: number;
-  motivo?: string | null;
-  created_at: string; // ISO
-};
+  motivo: string;
+}
 
-export type CrearProductoDTO = Omit<Producto, "id" | "estado"> & { estado?: Producto["estado"] };
-export type ActualizarProductoDTO = Partial<CrearProductoDTO>;
+export async function listProductos(): Promise<Producto[]> {
+  return api<Producto[]>("/inventory");
+}
 
-export const listProductos = () => api<Producto[]>("/inventory", { method: "GET" });
-export const listCategorias = () => api<string[]>("/inventory/categories", { method: "GET" });
-
-export const createProducto = (data: CrearProductoDTO) =>
-  api<Producto>("/inventory", { method: "POST", body: JSON.stringify(data) });
-
-export const updateProducto = (id: string, data: ActualizarProductoDTO) =>
-  api<Producto>(`/inventory/${id}`, { method: "PUT", body: JSON.stringify(data) });
-
-export const deleteProducto = (id: string) =>
-  api<void>(`/inventory/${id}`, { method: "DELETE" });
-
-// Historial de precios (si lo manejas)
-export type PrecioHist = { fecha: string; precio_costo: number; precio_venta: number };
-export const getHistorialPrecios = (id: string) =>
-  api<PrecioHist[]>(`/inventory/${id}/price-history`, { method: "GET" });
-
-// Carga masiva (Excel) – enviamos el archivo al backend
-
-export const importProductosJson = (rows: any[]) =>
-  api<{ inserted: number; updated: number }>("/inventory/import-json", {
+export async function createProducto(dto: CrearProductoDTO): Promise<Producto> {
+  return api<Producto>("/inventory", {
     method: "POST",
-    body: JSON.stringify({ rows }),
+    body: JSON.stringify(dto),
   });
+}
 
-export const importProductosExcel = (file: File) => {
+export async function updateProducto(
+  id: string,
+  dto: ActualizarProductoDTO & { motivo_precio?: string }
+): Promise<Producto> {
+  return api<Producto>(`/inventory/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteProducto(id: string): Promise<void> {
+  await api(`/inventory/${id}`, { method: "DELETE" });
+}
+
+export async function listCategorias(): Promise<string[]> {
+  return api<string[]>("/inventory-categories");
+}
+
+export async function createPriceHistory(dto: PriceHistoryDTO) {
+  return api("/inventory-price-history", {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+}
+export async function importProductosJson(items: ImportProductosInput[]): Promise<ImportProductosResult> {
+  try {
+    return await api<ImportProductosResult>("/inventory/import-json", {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    });
+  } catch (e: any) {
+    console.warn("Bulk import endpoint failed. Falling back to sequential creation.", e);
+    let inserted = 0;
+    let updated = 0;
+    const details: ImportProductosResult["details"] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const row = items[i];
+      try {
+        await createProducto(row);
+        inserted++;
+      } catch (err: any) {
+        details?.push({ 
+            index: i, 
+            message: err?.message || `Error en fila ${i + 1}: Falló la creación.` 
+        });
+      }
+    }
+
+    return { inserted, updated, errors: details.length, details };
+  }
+}
+export async function importProductosExcel(file: File): Promise<ImportProductosResult> {
   const form = new FormData();
   form.append("file", file);
-  const url = `${import.meta.env.VITE_API_BASE_URL}/inventory/import`;
-  const token = localStorage.getItem("token");
-  return fetch(url, {
+
+  return api<ImportProductosResult>("/inventory/import-excel", {
     method: "POST",
     body: form,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  }).then((r) => {
-    if (!r.ok) throw new Error(`API ${r.status}`);
-    return r.json() as Promise<{ inserted: number; updated: number }>;
+    headers: { } as any,
   });
-};
-
-  export function getPriceHistory(productoId: string) {
-  return api<HistorialPrecio[]>(`/inventory/${productoId}/price-history`, {
-    method: "GET",
-  });
-
-  
 }

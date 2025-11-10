@@ -2,15 +2,17 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "skipLibCheck": true,
-    "baseUrl": ".",
+    "moduleResolution": "Bundler", 
+    "jsx": "react-jsx",         
+    "types": ["vite/client"],    
+
+    "strict": true,             
+    "skipLibCheck": true,       
+    "baseUrl": ".",             
     "paths": {
       "@/*": ["src/*"]
-    },
-    "types": ["vite/client"]
+    }
   },
+  // === Archivos Incluidos ===
   "include": ["src", "src/**/*.d.ts"]
 }

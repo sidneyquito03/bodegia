@@ -4,30 +4,25 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Download, FileSpreadsheet } from "lucide-react";
 import * as XLSX from "xlsx";
-import { importProductosJson /*, importProductosExcel */ } from "@/services/inventory";
+import { importProductosJson} from "@/services/inventory";
 
-// Mapeo flexible de cabeceras -> campos internos
 const FIELD_ALIASES: Record<string, string> = {
-  // nombre
-  nombre: "nombre",
+ nombre: "nombre",
   producto: "nombre",
   name: "nombre",
   "product name": "nombre",
 
-  // código / sku
   codigo: "codigo",
   "código": "codigo",
   sku: "codigo",
-  "cod": "codigo",
+  cod: "codigo",
   "id producto": "codigo",
 
-  // stock / cantidad
   stock: "stock",
   existencias: "stock",
   cantidad: "stock",
   qty: "stock",
 
-  // precios
   "precio_costo": "precio_costo",
   "precio costo": "precio_costo",
   costo: "precio_costo",
@@ -38,21 +33,32 @@ const FIELD_ALIASES: Record<string, string> = {
   venta: "precio_venta",
   price: "precio_venta",
 
-  // categoría
   categoria: "categoria",
   categoría: "categoria",
   category: "categoria",
 
-  // estado opcional
   estado: "estado",
   status: "estado",
 
-  // fecha de vencimiento opcional
   fecha_vencimiento: "fecha_vencimiento",
   vencimiento: "fecha_vencimiento",
   "fecha vencimiento": "fecha_vencimiento",
   expiry: "fecha_vencimiento",
   "exp date": "fecha_vencimiento",
+
+  proveedor: "proveedor_nombre",     
+  "proveedor id": "proveedor_id",
+  marca: "marca",
+  "brand": "marca",
+  medida: "medida_peso",
+  "medida/peso": "medida_peso",
+  peso: "medida_peso",
+  unidad: "medida_peso",
+  "stock critico": "stock_critico",
+  "stock crítico": "stock_critico",
+  "stock bajo": "stock_bajo",
+  imagen: "imagen_url",
+  "imagen url": "imagen_url",
 };
 
 function normalizeKey(k: string) {
@@ -74,17 +80,26 @@ function mapHeaders(rawRow: any) {
 }
 
 function sanitizeRow(row: any) {
+  const fecha = row.fecha_vencimiento
+    ? new Date(row.fecha_vencimiento)
+    : null;
+
   return {
     nombre: String(row.nombre ?? "").trim(),
     codigo: String(row.codigo ?? "").trim(),
     stock: Number(row.stock ?? 0) || 0,
     precio_costo: Number(row.precio_costo ?? 0) || 0,
     precio_venta: Number(row.precio_venta ?? 0) || 0,
-    categoria: String(row.categoria ?? "General").trim().toLowerCase(),
+    categoria: String(row.categoria ?? "general").trim().toLowerCase(),
     estado: row.estado ? String(row.estado).trim() : "Disponible",
-    fecha_vencimiento: row.fecha_vencimiento
-      ? new Date(row.fecha_vencimiento).toISOString()
-      : null,
+    fecha_vencimiento: fecha ? fecha.toISOString() : null,
+    proveedor_id: row.proveedor_id ? String(row.proveedor_id) : null,
+    proveedor_nombre: row.proveedor_nombre ? String(row.proveedor_nombre).trim() : null,
+    marca: row.marca ? String(row.marca).trim() : null,
+    medida_peso: row.medida_peso ? String(row.medida_peso).trim() : null,
+    stock_critico: row.stock_critico != null ? Number(row.stock_critico) || 0 : undefined,
+    stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 0 : undefined,
+    imagen_url: row.imagen_url ? String(row.imagen_url).trim() : null,
   };
 }
 
@@ -128,8 +143,6 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet); // array de objetos
-
-      // mapeamos cabeceras y sanitizamos para preview
       const mapped = (jsonData as any[]).map((row) => sanitizeRow(mapHeaders(row)));
 
       setPreview(mapped);
@@ -161,12 +174,7 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
     setLoading(true);
     try {
-      // Opción 1 (recomendada para tu caso actual): enviar JSON ya normalizado
       const res = await importProductosJson(preview);
-
-      // Opción 2 (si prefieres que el backend parsee el archivo):
-      // if (rawFile) await importProductosExcel(rawFile);
-
       toast({
         title: "Importación exitosa",
         description: `Insertados/actualizados: ${res.inserted + res.updated} (ins: ${res.inserted}, upd: ${res.updated})`,
