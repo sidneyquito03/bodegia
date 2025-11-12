@@ -22,10 +22,10 @@ export const useOperadores = () => {
       data.sort((a, b) => a.nombre.localeCompare(b.nombre));
       setOperadores(data);
     } catch (err) {
-      console.error("Error cargando operadores:", err);
+      console.error("Error cargando vendedores:", err);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los operadores",
+        description: "No se pudieron cargar los vendedores",
         variant: "destructive",
       });
     } finally {
@@ -38,11 +38,11 @@ export const useOperadores = () => {
       const creado = await createOperador(payload);
       setOperadores((prev) => [...prev, creado].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       toast({
-        title: "Operador agregado",
+        title: "Vendedor agregado",
         description: `${payload.nombre} ha sido agregado al equipo`,
       });
     } catch (err: any) {
-      console.error("Error agregando operador:", err);
+      console.error("Error agregando vendedor:", err);
       toast({
         title: "Error",
         description: err?.message || "No se pudo agregar el operador",
@@ -57,12 +57,12 @@ export const useOperadores = () => {
       setOperadores((prev) =>
         prev.map((op) => (op.id === id ? { ...op, ...actualizado } : op)),
       );
-      toast({ title: "Operador actualizado", description: "Cambios guardados" });
+      toast({ title: "Vendedor actualizado", description: "Cambios guardados" });
     } catch (err: any) {
-      console.error("Error actualizando operador:", err);
+      console.error("Error actualizando vendedor:", err);
       toast({
         title: "Error",
-        description: err?.message || "No se pudo actualizar el operador",
+        description: err?.message || "No se pudo actualizar el vendedor",
         variant: "destructive",
       });
     }
@@ -75,7 +75,7 @@ export const useOperadores = () => {
         prev.map((op) => (op.id === id ? { ...op, ...actualizado } : op)),
       );
       toast({
-        title: actualizado.activo ? "Operador activado" : "Operador desactivado",
+        title: actualizado.activo ? "Vendedor activado" : "Vendedor desactivado",
         description: "El cambio se ha guardado correctamente",
       });
     } catch (err: any) {

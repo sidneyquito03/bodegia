@@ -25,22 +25,48 @@ export function useInventario() {
       const data = await listProductos();
 
       // Fallback de estado si el backend aún no lo calcula
-      const now = Date.now();
-      const withEstado = data.map((p) => {
-        if (p.estado) return p;
-        let estado: Producto["estado"] = "Disponible";
-        if (p.stock <= 0) estado = "Stock Crítico";
-        else if (p.stock < (p.stock_bajo ?? 10)) estado = "Stock Bajo";
+const now = Date.now();
 
-        if (p.fecha_vencimiento) {
-          const ms = new Date(p.fecha_vencimiento).getTime() - now;
-          const dias = ms / (1000 * 60 * 60 * 24);
-          if (dias <= 0) estado = "Stock Crítico";
-          else if (dias <= 7 && estado === "Disponible") estado = "Stock Bajo";
-        }
-        return { ...p, estado };
-      });
+const withEstado = data.map((p) => {
+    const precio_costo = typeof p.precio_costo === "string" 
+        ? Number(p.precio_costo) 
+        : p.precio_costo;
+        
+    const precio_venta = typeof p.precio_venta === "string" 
+        ? Number(p.precio_venta) 
+        : p.precio_venta;
+        
+    const stock = typeof p.stock === "string" 
+        ? Number(p.stock) 
+        : p.stock;
 
+    if (p.estado) {
+        return { 
+            ...p, 
+            precio_costo, 
+            precio_venta, 
+            stock, 
+            estado: p.estado 
+        };
+    }
+    
+    let estado: Producto["estado"] = "Disponible";
+    if (stock <= 0) estado = "Stock Crítico";
+    else if (stock < (p.stock_bajo ?? 10)) estado = "Stock Bajo"; 
+    if (p.fecha_vencimiento) {
+        const ms = new Date(p.fecha_vencimiento).getTime() - now;
+        const dias = ms / (1000 * 60 * 60 * 24);
+        if (dias <= 0) estado = "Stock Crítico";
+        else if (dias <= 7 && estado === "Disponible") estado = "Stock Bajo";
+    }
+    return { 
+        ...p, 
+        precio_costo, 
+        precio_venta, 
+        stock, 
+        estado 
+    };
+});
       setProductos(withEstado);
     } catch (e: any) {
       setError(e?.message ?? "Error al cargar inventario");

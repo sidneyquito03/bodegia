@@ -36,7 +36,7 @@ export const OperadorModal = ({ isOpen, onClose, onSave }: OperadorModalProps) =
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>Crear Operador</DialogTitle>
+          <DialogTitle>Crear Vendedor</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -98,7 +98,7 @@ export const OperadorModal = ({ isOpen, onClose, onSave }: OperadorModalProps) =
               Cancelar
             </Button>
             <Button type="submit">
-              Crear Operador
+              Crear Vendedor
             </Button>
           </DialogFooter>
         </form>

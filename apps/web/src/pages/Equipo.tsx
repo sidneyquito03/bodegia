@@ -31,11 +31,11 @@ const Equipo = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Gestión de Equipo</h1>
-            <p className="text-muted-foreground mt-1">Administra a tus operadores</p>
+            <p className="text-muted-foreground mt-1">Administra a tus vendedores</p>
           </div>
           <Button className="gap-2" onClick={() => setModalOpen(true)}>
             <Plus className="h-4 w-4" />
-            Crear Operador
+            Crear Vendedor
           </Button>
         </div>
 
@@ -46,7 +46,7 @@ const Equipo = () => {
           </Card>
         ) : operadores.length === 0 ? (
           <Card className="p-8 shadow-card">
-            <p className="text-center text-muted-foreground">No hay operadores registrados</p>
+            <p className="text-center text-muted-foreground">No hay vendedores registrados</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

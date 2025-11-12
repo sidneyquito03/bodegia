@@ -31,9 +31,11 @@ export interface CompraProveedor {
 }
 
 // Endpoints REST (ajusta si tu backend usa otros)
-export async function listProveedores(): Promise<Proveedor[]> {
-  return api<Proveedor[]>("/proveedores", { method: "GET" });
+export async function listProveedores(activos?: boolean) {
+  const q = activos ? "?activos=1" : "";
+  return api<{id: string; nombre: string; activo: boolean}[]>(`/proveedores${q}`);
 }
+
 
 export async function createProveedor(body: Omit<Proveedor, "id" | "created_at" | "updated_at">) {
   return api<Proveedor>("/proveedores", { method: "POST", body: JSON.stringify(body) });

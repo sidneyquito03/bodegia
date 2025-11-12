@@ -66,7 +66,7 @@ function normalizeKey(k: string) {
     .toLowerCase()
     .trim()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, ""); // quita tildes
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function mapHeaders(rawRow: any) {
@@ -142,7 +142,7 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet); // array de objetos
+      const jsonData = XLSX.utils.sheet_to_json(worksheet); 
       const mapped = (jsonData as any[]).map((row) => sanitizeRow(mapHeaders(row)));
 
       setPreview(mapped);

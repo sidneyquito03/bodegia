@@ -64,9 +64,10 @@ export interface PriceHistoryDTO {
   motivo: string;
 }
 
-export async function listProductos(): Promise<Producto[]> {
-  return api<Producto[]>("/inventory");
+export async function listProductos() {
+  return api<Producto[]>('/inventory/products'); 
 }
+
 
 export async function createProducto(dto: CrearProductoDTO): Promise<Producto> {
   return api<Producto>("/inventory", {
@@ -90,7 +91,7 @@ export async function deleteProducto(id: string): Promise<void> {
 }
 
 export async function listCategorias(): Promise<string[]> {
-  return api<string[]>("/inventory-categories");
+  return api<string[]>("/inventory/categories");
 }
 
 export async function createPriceHistory(dto: PriceHistoryDTO) {
