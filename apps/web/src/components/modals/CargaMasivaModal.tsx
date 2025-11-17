@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Download, FileSpreadsheet } from "lucide-react";
+import { Upload, Download, FileSpreadsheet, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import * as XLSX from "xlsx";
 import { importProductosJson} from "@/services/inventory";
 
@@ -80,9 +81,30 @@ function mapHeaders(rawRow: any) {
 }
 
 function sanitizeRow(row: any) {
-  const fecha = row.fecha_vencimiento
-    ? new Date(row.fecha_vencimiento)
-    : null;
+  // Campos obligatorios
+  const camposObligatorios = ['nombre', 'codigo', 'precio_costo', 'precio_venta'];
+  const faltantes = camposObligatorios.filter(campo => !row[campo] || String(row[campo]).trim() === '');
+  
+  if (faltantes.length > 0) {
+    throw new Error(`Faltan campos obligatorios: ${faltantes.join(', ')}`);
+  }
+
+  // Conversión mejorada de fechas de Excel
+  let fechaVencimiento: Date | null = null;
+  if (row.fecha_vencimiento) {
+    const val = row.fecha_vencimiento;
+    
+    // Si es un número (serial date de Excel)
+    if (typeof val === 'number') {
+      // Excel serial date: días desde 1900-01-01 (con ajuste por bug de Excel)
+      const excelEpoch = new Date(1899, 11, 30); // 30 de diciembre de 1899
+      fechaVencimiento = new Date(excelEpoch.getTime() + val * 86400000);
+    } else if (val instanceof Date) {
+      fechaVencimiento = val;
+    } else if (typeof val === 'string') {
+      fechaVencimiento = new Date(val);
+    }
+  }
 
   return {
     nombre: String(row.nombre ?? "").trim(),
@@ -92,13 +114,15 @@ function sanitizeRow(row: any) {
     precio_venta: Number(row.precio_venta ?? 0) || 0,
     categoria: String(row.categoria ?? "general").trim().toLowerCase(),
     estado: row.estado ? String(row.estado).trim() : "Disponible",
-    fecha_vencimiento: fecha ? fecha.toISOString() : null,
+    fecha_vencimiento: fechaVencimiento && !isNaN(fechaVencimiento.getTime()) 
+      ? fechaVencimiento.toISOString().split('T')[0] 
+      : null,
     proveedor_id: row.proveedor_id ? String(row.proveedor_id) : null,
     proveedor_nombre: row.proveedor_nombre ? String(row.proveedor_nombre).trim() : null,
     marca: row.marca ? String(row.marca).trim() : null,
     medida_peso: row.medida_peso ? String(row.medida_peso).trim() : null,
-    stock_critico: row.stock_critico != null ? Number(row.stock_critico) || 0 : undefined,
-    stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 0 : undefined,
+    stock_critico: row.stock_critico != null ? Number(row.stock_critico) || 10 : 10,
+    stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 20 : 20,
     imagen_url: row.imagen_url ? String(row.imagen_url).trim() : null,
   };
 }
@@ -124,8 +148,14 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
         precio_costo: 10.5,
         precio_venta: 15.0,
         categoria: "general",
-        estado: "Disponible",
+        marca: "MarcaX",
+        medida_peso: "500g",
+        proveedor_nombre: "Proveedor S.A.",
+        proveedor_id: "",
         fecha_vencimiento: "2025-12-31",
+        imagen_url: "https://ejemplo.com/imagen.jpg",
+        stock_critico: 10,
+        stock_bajo: 20,
       },
     ];
     const ws = XLSX.utils.json_to_sheet(template);
@@ -142,15 +172,53 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet); 
-      const mapped = (jsonData as any[]).map((row) => sanitizeRow(mapHeaders(row)));
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      
+      const erroresValidacion: { fila: number; error: string }[] = [];
+      const mapped: any[] = [];
+      
+      (jsonData as any[]).forEach((row, index) => {
+        try {
+          const sanitized = sanitizeRow(mapHeaders(row));
+          mapped.push(sanitized);
+        } catch (error: any) {
+          erroresValidacion.push({ 
+            fila: index + 2, // +2 porque Excel empieza en 1 y hay header
+            error: error.message 
+          });
+        }
+      });
+
+      if (erroresValidacion.length > 0) {
+        const mensajeError = erroresValidacion
+          .slice(0, 5) // Mostrar solo primeros 5 errores
+          .map(e => `Fila ${e.fila}: ${e.error}`)
+          .join('\n');
+        
+        toast({
+          title: "Errores en el archivo",
+          description: `Se encontraron ${erroresValidacion.length} errores:\n${mensajeError}${erroresValidacion.length > 5 ? '\n...' : ''}`,
+          variant: "destructive",
+        });
+        
+        // Aún así mostrar los válidos si existen
+        if (mapped.length > 0) {
+          setPreview(mapped);
+          setRawFile(file);
+          toast({
+            title: "Productos válidos detectados",
+            description: `${mapped.length} de ${jsonData.length} productos son válidos y pueden importarse`,
+          });
+        }
+        return;
+      }
 
       setPreview(mapped);
       setRawFile(file);
 
       toast({
         title: "Archivo cargado",
-        description: `Se detectaron ${mapped.length} productos`,
+        description: `Se detectaron ${mapped.length} productos válidos`,
       });
     } catch (error) {
       console.error("Error leyendo archivo:", error);
@@ -204,6 +272,15 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Mensaje prominente animado */}
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900">
+              <strong>¡Importante!</strong> Para mejores resultados, descarga y usa la plantilla oficial de Excel. 
+              Incluye todos los campos necesarios con el formato correcto.
+            </AlertDescription>
+          </Alert>
+
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={downloadTemplate}>
               <Download className="h-4 w-4 mr-2" />

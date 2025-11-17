@@ -16,6 +16,7 @@ import { inventoryRouter } from "./routes/inventory";import { inventoryImportRou
 import { providersRouter } from "./routes/providers";
 import { comprasProvRouter } from "./routes/compras_proveedores";
 import { metricsRouter } from "./routes/metrics";
+import { mermasRouter } from "./routes/mermas";
 
 const app = express();
 app.use(cors());
@@ -31,6 +32,7 @@ app.use("/inventory", inventoryImportRouter);
 app.use("/proveedores", providersRouter);
 app.use("/compras-proveedores", comprasProvRouter);
 app.use("/metrics", metricsRouter);
+app.use("/mermas", mermasRouter);
 //app.use("/ai", aiStrategistRouter);
 app.use("/operators", operatorsRouter);
 app.use("/ventas", ventasRouter);

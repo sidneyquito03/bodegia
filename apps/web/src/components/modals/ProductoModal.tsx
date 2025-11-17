@@ -34,6 +34,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
 
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenPreview, setImagenPreview] = useState<string | null>(null);
+  const [imagenUrlInput, setImagenUrlInput] = useState<string>("");
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -93,6 +94,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         stock_bajo: (producto as any).stock_bajo ?? 20,
       });
       setImagenPreview((producto as any).imagen_url ?? null);
+      setImagenUrlInput((producto as any).imagen_url ?? "");
     } else {
       setFormData({
         nombre: "",
@@ -112,6 +114,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         stock_bajo: 20,
       });
       setImagenPreview(null);
+      setImagenUrlInput("");
     }
     setImagenFile(null);
     setMostrarNuevaCategoria(false);
@@ -158,7 +161,11 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
     }
 
     let imagenUrl = formData.imagen_url ?? undefined;
-    if (imagenFile) {
+    // Si hay URL en el input, usarla directamente
+    if (imagenUrlInput && imagenUrlInput.trim()) {
+      imagenUrl = imagenUrlInput.trim();
+    } else if (imagenFile) {
+      // Si hay archivo, subirlo
       try {
         const url = await uploadPublicFile(imagenFile);
         if (!url) {
@@ -169,7 +176,11 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         }
         imagenUrl = url ?? undefined;
       } catch {
-        // ya notificado arriba
+        toast({
+          title: "Error al subir imagen",
+          description: "Guardaremos el producto sin imagen.",
+          variant: "destructive",
+        });
       }
     }
 
@@ -204,11 +215,11 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Imagen */}
+          {/* Imagen - Opción 1: Subir archivo */}
           <div className="space-y-2">
-            <Label>Imagen del Producto (Opcional)</Label>
+            <Label>Imagen del Producto (Subir archivo)</Label>
             <div className="flex items-center gap-4">
-              {imagenPreview ? (
+              {imagenPreview && !imagenUrlInput ? (
                 <div className="relative">
                   <img
                     src={imagenPreview}
@@ -239,6 +250,53 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                   </div>
                   <input type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
                 </label>
+              )}
+            </div>
+          </div>
+
+          {/* Imagen - Opción 2: URL externa */}
+          <div className="space-y-2">
+            <Label htmlFor="imagen_url">O pega URL de imagen externa</Label>
+            <div className="flex gap-2 items-start">
+              <div className="flex-1 space-y-2">
+                <Input
+                  id="imagen_url"
+                  value={imagenUrlInput}
+                  onChange={(e) => {
+                    setImagenUrlInput(e.target.value);
+                    setFormData({ ...formData, imagen_url: e.target.value || null });
+                    if (e.target.value) {
+                      setImagenPreview(e.target.value);
+                      setImagenFile(null);
+                    }
+                  }}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+              </div>
+              {imagenUrlInput && (
+                <div className="relative">
+                  <img
+                    src={imagenUrlInput}
+                    alt="Preview URL"
+                    className="w-20 h-20 object-cover rounded border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80?text=Error';
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-5 w-5"
+                    onClick={() => {
+                      setImagenUrlInput("");
+                      setFormData({ ...formData, imagen_url: null });
+                      setImagenPreview(null);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -388,8 +446,6 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                 <SelectContent>
                   <SelectItem value="Disponible">Disponible</SelectItem>
                   <SelectItem value="Stock Bajo">Stock Bajo</SelectItem>
-                  <SelectItem value="Stock Crítico">Stock Crítico</SelectItem>
-                  <SelectItem value="Agotado">Agotado</SelectItem>
                   <SelectItem value="Vencido">Vencido</SelectItem>
                 </SelectContent>
               </Select>

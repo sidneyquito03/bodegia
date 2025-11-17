@@ -35,6 +35,19 @@ create table if not exists productos(
   updated_at timestamptz default now()
 );
 
+create table if not exists clientes(
+  id uuid default gen_random_uuid() primary key,
+  nombre text not null,
+  dni text,
+  telefono text,
+  direccion text,
+  email text,
+  deuda_total numeric(12,2) default 0,
+  activo boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create table if not exists ventas(
   id uuid default gen_random_uuid() primary key,
   fecha timestamptz default now(),
@@ -49,6 +62,18 @@ create table if not exists ventas_detalle(
   producto_id uuid references productos(id),
   cantidad int not null,
   precio_unitario numeric(12,2) not null
+);
+
+create table if not exists fiados_transacciones(
+  id uuid default gen_random_uuid() primary key,
+  cliente_id uuid references clientes(id),
+  venta_id uuid references ventas(id),
+  tipo text not null default 'fiado',
+  monto numeric(12,2) not null,
+  estado text not null default 'pendiente',
+  metodo_pago text,
+  referencia_transaccion text,
+  created_at timestamptz default now()
 );
 
 create table if not exists historial_precios(
@@ -77,7 +102,80 @@ create table if not exists compras_proveedores(
   created_at timestamptz default now()
 );
 
+-- Tabla de mermas/pérdidas (vencidos, defectuosos, robos, etc.)
+create table if not exists mermas(
+  id uuid default gen_random_uuid() primary key,
+  producto_id uuid references productos(id),
+  tipo_merma text not null default 'vencido',
+  cantidad int not null,
+  costo_unitario numeric(12,2) not null,
+  costo_total numeric(12,2) not null,
+  motivo text,
+  fecha_registro timestamptz default now(),
+  registrado_por text,
+  created_at timestamptz default now()
+);
+
+-- Índices
 create index if not exists idx_productos_codigo on productos(codigo);
 create index if not exists idx_productos_categoria on productos(categoria);
+create index if not exists idx_productos_vencimiento on productos(fecha_vencimiento);
+create index if not exists idx_productos_estado on productos(estado);
 create index if not exists idx_ventas_fecha on ventas(fecha);
 create index if not exists idx_detalle_venta on ventas_detalle(venta_id);
+create index if not exists idx_mermas_producto on mermas(producto_id);
+create index if not exists idx_mermas_fecha on mermas(fecha_registro);
+
+-- Función para calcular el estado automáticamente
+-- Solo 3 estados: Disponible (verde), Stock Bajo (amarillo/rojo según urgencia), Vencido
+create or replace function calcular_estado_producto(
+  p_stock int,
+  p_stock_critico int,
+  p_stock_bajo int,
+  p_fecha_vencimiento date
+) returns text as $$
+declare
+  dias_hasta_vencimiento int;
+begin
+  -- Si hay fecha de vencimiento, verificar primero
+  if p_fecha_vencimiento is not null then
+    dias_hasta_vencimiento := p_fecha_vencimiento - current_date;
+    
+    -- Ya vencido
+    if dias_hasta_vencimiento <= 0 then
+      return 'Vencido';
+    end if;
+  end if;
+  
+  -- Validación por stock: Solo 3 estados
+  -- Stock Bajo incluye tanto stock crítico como stock bajo (diferenciados por color en frontend)
+  if p_stock <= p_stock_critico then
+    return 'Stock Bajo'; -- Urgente (rojo en UI)
+  elsif p_stock <= p_stock_bajo then
+    return 'Stock Bajo'; -- Planificar compra (amarillo en UI)
+  else
+    return 'Disponible'; -- Verde en UI
+  end if;
+end;
+$$ language plpgsql immutable;
+
+-- Trigger para actualizar estado automáticamente
+create or replace function actualizar_estado_producto()
+returns trigger as $$
+begin
+  new.estado := calcular_estado_producto(
+    new.stock,
+    coalesce(new.stock_critico, 10),
+    coalesce(new.stock_bajo, 20),
+    new.fecha_vencimiento
+  );
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trigger_actualizar_estado on productos;
+create trigger trigger_actualizar_estado
+  before insert or update of stock, stock_critico, stock_bajo, fecha_vencimiento
+  on productos
+  for each row
+  execute function actualizar_estado_producto();

@@ -11,11 +11,14 @@ const itemSchema = z.object({
   precio_costo: z.number(),
   precio_venta: z.number(),
   categoria: z.string(),
-  proveedor_nombre: z.string().optional(),
-  proveedor_id: z.string().optional(),
-  marca: z.string().optional(),
-  medida_peso: z.string().optional(),
-  fecha_vencimiento: z.string().optional(),
+  proveedor_nombre: z.string().optional().nullable(),
+  proveedor_id: z.string().optional().nullable(),
+  marca: z.string().optional().nullable(),
+  medida_peso: z.string().optional().nullable(),
+  fecha_vencimiento: z.string().optional().nullable(),
+  imagen_url: z.string().optional().nullable(),
+  stock_critico: z.number().optional().nullable(),
+  stock_bajo: z.number().optional().nullable(),
 });
 
 inventoryImportRouter.post("/import-json", async (req, res) => {
@@ -53,18 +56,21 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
           `UPDATE productos
            SET nombre=$1, stock=$2, precio_costo=$3, precio_venta=$4, categoria=$5,
                proveedor_id=$6, marca=$7, medida_peso=$8, fecha_vencimiento=$9,
-               updated_at=NOW()
-           WHERE codigo=$10`,
+               imagen_url=$10, stock_critico=$11, stock_bajo=$12, updated_at=NOW()
+           WHERE codigo=$13`,
           [
             i.nombre,
             i.stock,
             i.precio_costo,
             i.precio_venta,
             i.categoria,
-            proveedor_id,
-            i.marca,
-            i.medida_peso,
-            i.fecha_vencimiento,
+            proveedor_id ?? null,
+            i.marca ?? null,
+            i.medida_peso ?? null,
+            i.fecha_vencimiento ?? null,
+            i.imagen_url ?? null,
+            i.stock_critico ?? 10,
+            i.stock_bajo ?? 20,
             i.codigo,
           ]
         );
@@ -72,8 +78,8 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
       } else {
         await db.none(
           `INSERT INTO productos(nombre,codigo,stock,precio_costo,precio_venta,categoria,
-            proveedor_id,marca,medida_peso,fecha_vencimiento)
-           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+            proveedor_id,marca,medida_peso,fecha_vencimiento,imagen_url,stock_critico,stock_bajo)
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
           [
             i.nombre,
             i.codigo,
@@ -81,10 +87,13 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
             i.precio_costo,
             i.precio_venta,
             i.categoria,
-            proveedor_id,
-            i.marca,
-            i.medida_peso,
-            i.fecha_vencimiento,
+            proveedor_id ?? null,
+            i.marca ?? null,
+            i.medida_peso ?? null,
+            i.fecha_vencimiento ?? null,
+            i.imagen_url ?? null,
+            i.stock_critico ?? 10,
+            i.stock_bajo ?? 20,
           ]
         );
         inserted++;

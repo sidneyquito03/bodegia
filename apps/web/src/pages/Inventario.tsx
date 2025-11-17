@@ -8,7 +8,8 @@ import { ChatbotWidget } from "../components/ChatbotWidget";
 import { ProductoModal } from "../components/modals/ProductoModal";
 import { CargaMasivaModal } from "../components/modals/CargaMasivaModal";
 import { HistorialPreciosModal } from "../components/modals/HistorialPreciosModal";
-import { Plus, Search, Pencil, Trash2, Upload, ChevronLeft, ChevronRight, History } from "lucide-react";
+import { DetalleProductoModal } from "../components/modals/DetalleProductoModal";
+import { Plus, Search, Pencil, Trash2, Upload, ChevronLeft, ChevronRight, History, Eye } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -44,6 +45,8 @@ const Inventario = () => {
   const [ordenamiento, setOrdenamiento] = useState<string>("nombre-asc");
   const [historialModalOpen, setHistorialModalOpen] = useState(false);
   const [productoHistorial, setProductoHistorial] = useState<{id: string; nombre: string} | null>(null);
+  const [detalleModalOpen, setDetalleModalOpen] = useState(false);
+  const [productoDetalle, setProductoDetalle] = useState<Producto | null>(null);
   const itemsPorPagina = 10;
 
   const categorias = useMemo(() => {
@@ -126,23 +129,30 @@ const Inventario = () => {
     setDeleteDialogOpen(false);
   };
 
-  const getEstadoBadge = (estado: string) => {
+  const getEstadoBadge = (estado: string, stock: number, stock_critico?: number) => {
     switch (estado) {
       case "Disponible":
-        return <Badge className="bg-success text-success-foreground">{estado}</Badge>;
+        return <Badge className="bg-green-500 text-white hover:bg-green-600">{estado}</Badge>;
       case "Stock Bajo":
-        return <Badge variant="secondary">{estado}</Badge>;
-      case "Stock Crítico":
+        // Urgente (rojo) si está en nivel crítico, amarillo si solo bajo
+        const urgente = stock_critico && stock <= stock_critico;
+        return urgente 
+          ? <Badge className="bg-red-500 text-white hover:bg-red-600">Stock Bajo (Urgente)</Badge>
+          : <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">Stock Bajo</Badge>;
+      case "Vencido":
         return <Badge variant="destructive">{estado}</Badge>;
       default:
         return <Badge variant="outline">{estado}</Badge>;
     }
   };
 
-  const handleStockChange = (id: string, newStock: number) => {
-    if (newStock >= 0) {
-      actualizarProducto(id, { stock: newStock });
-    }
+  const getDiasHastaVencimiento = (fecha_vencimiento?: string) => {
+    if (!fecha_vencimiento) return null;
+    const hoy = new Date();
+    const vencimiento = new Date(fecha_vencimiento);
+    const diffTime = vencimiento.getTime() - hoy.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   return (
@@ -220,7 +230,7 @@ const Inventario = () => {
                   <SelectItem value="todos">Todos los estados</SelectItem>
                   <SelectItem value="Disponible">Disponible</SelectItem>
                   <SelectItem value="Stock Bajo">Stock Bajo</SelectItem>
-                  <SelectItem value="Stock Crítico">Stock Crítico</SelectItem>
+                  <SelectItem value="Vencido">Vencido</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -249,61 +259,100 @@ const Inventario = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Imagen</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Código</TableHead>
+                  <TableHead>Marca</TableHead>
                   <TableHead>Stock</TableHead>
-                  <TableHead>P. Costo</TableHead>
                   <TableHead>P. Venta</TableHead>
-                  <TableHead>Ganancia %</TableHead>
                   <TableHead>Categoría</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead>Vencimiento</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       Cargando...
                     </TableCell>
                   </TableRow>
                 ) : productosPaginados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       No se encontraron productos
                     </TableCell>
                   </TableRow>
                 ) : (
                   productosPaginados.map((producto) => {
-                    const ganancia = ((producto.precio_venta - producto.precio_costo) / producto.precio_costo * 100);
+                    const diasVencimiento = getDiasHastaVencimiento(producto.fecha_vencimiento);
                     return (
                       <TableRow key={producto.id}>
+                        <TableCell>
+                          {producto.imagen_url ? (
+                            <img 
+                              src={producto.imagen_url} 
+                              alt={producto.nombre}
+                              className="w-10 h-10 object-cover rounded"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40?text=No+Img';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
+                              Sin img
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">{producto.nombre}</TableCell>
                         <TableCell className="text-muted-foreground">{producto.codigo}</TableCell>
-                        <TableCell>
-                          <Input 
-                            type="number" 
-                            value={producto.stock} 
-                            onChange={(e) => handleStockChange(producto.id, parseInt(e.target.value) || 0)}
-                            className="w-20 h-8"
-                          />
+                        <TableCell className="text-sm text-muted-foreground">
+                          {producto.marca || '-'}
                         </TableCell>
-                        <TableCell>S/. {producto.precio_costo.toFixed(2)}</TableCell>
+                        <TableCell className="font-semibold">
+                          {producto.stock}
+                        </TableCell>
                         <TableCell>S/. {producto.precio_venta.toFixed(2)}</TableCell>
-                        <TableCell className="text-success font-medium">
-                          {ganancia.toFixed(1)}%
-                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">{producto.categoria}</Badge>
                         </TableCell>
-                        <TableCell>{getEstadoBadge(producto.estado)}</TableCell>
+                        <TableCell>{getEstadoBadge(producto.estado, producto.stock, producto.stock_critico)}</TableCell>
+                        <TableCell>
+                          {diasVencimiento !== null && (
+                            <div className="flex items-center gap-1">
+                              {diasVencimiento <= 0 ? (
+                                <Badge variant="destructive" className="text-xs">Vencido</Badge>
+                              ) : diasVencimiento <= 7 ? (
+                                <Badge className="bg-orange-500 text-white text-xs">⚠ {diasVencimiento}d</Badge>
+                              ) : diasVencimiento <= 30 ? (
+                                <Badge className="bg-yellow-500 text-black text-xs">{diasVencimiento}d</Badge>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">{diasVencimiento}d</span>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8"
+                              onClick={() => {
+                                setProductoDetalle(producto);
+                                setDetalleModalOpen(true);
+                              }}
+                              title="Ver detalles"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
                               onClick={() => handleEdit(producto)}
+                              title="Editar"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -312,6 +361,7 @@ const Inventario = () => {
                               size="icon" 
                               className="h-8 w-8 text-destructive hover:text-destructive"
                               onClick={() => handleDeleteClick(producto.id)}
+                              title="Eliminar"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -413,6 +463,15 @@ const Inventario = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DetalleProductoModal
+        isOpen={detalleModalOpen}
+        onClose={() => {
+          setDetalleModalOpen(false);
+          setProductoDetalle(null);
+        }}
+        producto={productoDetalle}
+      />
 
       <ChatbotWidget />
     </Layout>

@@ -23,7 +23,7 @@ const navItems = [
   { to: "/reportes", icon: TrendingUp, label: "Reportes" },
   { to: "/reportes-sunat", icon: FileText, label: "Reportes SUNAT" },
   { to: "/proveedores", icon: Store, label: "Proveedores" },
-  { to: "/equipo", icon: Users, label: "Equipo" },
+  { to: "/equipo", icon: Users, label: "Vendedores" },
   { to: "/configuracion", icon: Settings, label: "Configuración" },
 ];
 
