@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Sparkles } from "lucide-react";
 
 import { Producto } from "@/hooks/useInventario"; 
 import { uploadPublicFile } from "@/services/files";
@@ -51,8 +51,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
     fecha_vencimiento: null as string | null, // yyyy-mm-dd
     marca: null as string | null,
     medida_peso: null as string | null,
-    stock_critico: 10,
-    stock_bajo: 20,
+    stock_bajo: 10,
   });
 
   // cargar categorías y proveedores
@@ -90,8 +89,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         fecha_vencimiento: (producto as any).fecha_vencimiento ?? null,
         marca: (producto as any).marca ?? null,
         medida_peso: (producto as any).medida_peso ?? null,
-        stock_critico: (producto as any).stock_critico ?? 10,
-        stock_bajo: (producto as any).stock_bajo ?? 20,
+        stock_bajo: (producto as any).stock_bajo ?? 10,
       });
       setImagenPreview((producto as any).imagen_url ?? null);
       setImagenUrlInput((producto as any).imagen_url ?? "");
@@ -110,8 +108,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         fecha_vencimiento: null,
         marca: null,
         medida_peso: null,
-        stock_critico: 10,
-        stock_bajo: 20,
+        stock_bajo: 10,
       });
       setImagenPreview(null);
       setImagenUrlInput("");
@@ -199,8 +196,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       fecha_vencimiento: formData.fecha_vencimiento || null,
       marca: formData.marca?.trim() || null,
       medida_peso: formData.medida_peso?.trim() || null,
-      stock_critico: Number(formData.stock_critico) || 10,
-      stock_bajo: Number(formData.stock_bajo) || 20,
+      stock_bajo: Number(formData.stock_bajo) || 10,
     };
 
     onSave(payload);
@@ -209,15 +205,24 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
 
   return (
   <Dialog open={isOpen} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{producto ? "Editar Producto" : "Agregar Producto"}</DialogTitle>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto border-none shadow-2xl">
+        {/* Header con gradiente */}
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-10 rounded-t-lg -z-10"></div>
+        
+        <DialogHeader className="relative">
+          <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+            <Sparkles className="h-7 w-7 text-purple-500" />
+            {producto ? "Editar Producto" : "Agregar Nuevo Producto"}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground mt-2">
+            {producto ? "Actualiza la información de tu producto" : "Completa los datos para agregar un producto al inventario"}
+          </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           {/* Imagen - Opción 1: Subir archivo */}
-          <div className="space-y-2">
-            <Label>Imagen del Producto (Subir archivo)</Label>
+          <div className="space-y-2 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+            <Label className="text-sm font-semibold text-blue-900">📸 Imagen del Producto (Subir archivo)</Label>
             <div className="flex items-center gap-4">
               {imagenPreview && !imagenUrlInput ? (
                 <div className="relative">
@@ -416,26 +421,19 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="stock_critico">Stock Crítico</Label>
-              <Input
-                id="stock_critico"
-                type="number"
-                min="0"
-                value={formData.stock_critico}
-                onChange={(e) => setFormData({ ...formData, stock_critico: parseInt(e.target.value) || 10 })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="stock_bajo">Stock Bajo</Label>
+              <Label htmlFor="stock_bajo">Stock Bajo (umbral personalizado)</Label>
               <Input
                 id="stock_bajo"
                 type="number"
                 min="0"
                 value={formData.stock_bajo}
-                onChange={(e) => setFormData({ ...formData, stock_bajo: parseInt(e.target.value) || 20 })}
+                onChange={(e) => setFormData({ ...formData, stock_bajo: parseInt(e.target.value) || 10 })}
               />
+              <p className="text-xs text-muted-foreground">
+                Sistema general: Rojo ≤7 unidades, Naranja ≤10 unidades
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="estado">Estado</Label>
@@ -508,11 +506,16 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
             )}
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="gap-2 mt-6">
+            <Button type="button" variant="outline" onClick={onClose} className="min-w-[120px]">
               Cancelar
             </Button>
-            <Button type="submit">{producto ? "Actualizar" : "Agregar"}</Button>
+            <Button 
+              type="submit" 
+              className="min-w-[120px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg"
+            >
+              {producto ? "💾 Actualizar" : "✨ Agregar"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

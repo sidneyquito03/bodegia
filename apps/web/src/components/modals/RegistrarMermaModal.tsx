@@ -195,14 +195,22 @@ export const RegistrarMermaModal = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="vencido">Vencido</SelectItem>
-                <SelectItem value="defectuoso">Defectuoso</SelectItem>
-                <SelectItem value="robo">Robo</SelectItem>
-                <SelectItem value="perdida">Pérdida</SelectItem>
-                <SelectItem value="daño">Daño</SelectItem>
-                <SelectItem value="otro">Otro</SelectItem>
+                <SelectItem value="vencido">📅 Vencido (alimentos/perecibles)</SelectItem>
+                <SelectItem value="defectuoso">⚠️ Defectuoso (llegó dañado)</SelectItem>
+                <SelectItem value="daño">💥 Dañado (manipulación interna)</SelectItem>
+                <SelectItem value="robo">🔒 Robo/Hurto</SelectItem>
+                <SelectItem value="perdida">❓ Pérdida/Extravío</SelectItem>
+                <SelectItem value="obsoleto">📦 Obsoleto/Descontinuado</SelectItem>
+                <SelectItem value="otro">📝 Otro</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {formData.tipo_merma === "vencido" && "⚡ Típico de bodegas/alimentos"}
+              {formData.tipo_merma === "defectuoso" && "⚡ Típico de ferreterías/tiendas"}
+              {formData.tipo_merma === "daño" && "⚡ Producto dañado durante almacenamiento"}
+              {formData.tipo_merma === "robo" && "⚡ Pérdida por sustracción"}
+              {formData.tipo_merma === "obsoleto" && "⚡ Producto fuera de línea/tendencia"}
+            </p>
           </div>
 
           {/* Cantidad */}

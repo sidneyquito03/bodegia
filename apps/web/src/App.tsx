@@ -14,6 +14,7 @@ import ReportesSUNAT from "./pages/ReportesSUNAT";
 import Vendedores from "./pages/Equipo";
 import Proveedores from "./pages/Proveedores";
 import Configuracion from "./pages/Configuracion";
+import ControlMermas from "./pages/ControlMermas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/equipo" element={<Vendedores />} />
           <Route path="/configuracion" element={<Configuracion />} />
           <Route path="/proveedores" element={<Proveedores />} />
+          <Route path="/mermas" element={<ControlMermas />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

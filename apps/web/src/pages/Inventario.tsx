@@ -9,7 +9,7 @@ import { ProductoModal } from "../components/modals/ProductoModal";
 import { CargaMasivaModal } from "../components/modals/CargaMasivaModal";
 import { HistorialPreciosModal } from "../components/modals/HistorialPreciosModal";
 import { DetalleProductoModal } from "../components/modals/DetalleProductoModal";
-import { Plus, Search, Pencil, Trash2, Upload, ChevronLeft, ChevronRight, History, Eye } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Upload, ChevronLeft, ChevronRight, History, Eye, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -29,7 +29,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import { useInventario, Producto } from "../hooks/useInventario";
+import ControlMermas from "./ControlMermas";
 
 const Inventario = () => {
   const { productos, loading, agregarProducto, actualizarProducto, eliminarProducto } = useInventario();
@@ -47,6 +54,7 @@ const Inventario = () => {
   const [productoHistorial, setProductoHistorial] = useState<{id: string; nombre: string} | null>(null);
   const [detalleModalOpen, setDetalleModalOpen] = useState(false);
   const [productoDetalle, setProductoDetalle] = useState<Producto | null>(null);
+  const [mermasViewOpen, setMermasViewOpen] = useState(false);
   const itemsPorPagina = 10;
 
   const categorias = useMemo(() => {
@@ -129,16 +137,17 @@ const Inventario = () => {
     setDeleteDialogOpen(false);
   };
 
-  const getEstadoBadge = (estado: string, stock: number, stock_critico?: number) => {
+  const getEstadoBadge = (estado: string, stock: number) => {
     switch (estado) {
       case "Disponible":
         return <Badge className="bg-green-500 text-white hover:bg-green-600">{estado}</Badge>;
       case "Stock Bajo":
-        // Urgente (rojo) si está en nivel crítico, amarillo si solo bajo
-        const urgente = stock_critico && stock <= stock_critico;
-        return urgente 
-          ? <Badge className="bg-red-500 text-white hover:bg-red-600">Stock Bajo (Urgente)</Badge>
-          : <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">Stock Bajo</Badge>;
+        // Umbral FIJO: ≤7 = Rojo (urgente), ≤15 = Naranja (advertencia)
+        if (stock <= 7) {
+          return <Badge className="bg-red-500 text-white hover:bg-red-600">Stock Bajo (Urgente)</Badge>;
+        } else {
+          return <Badge className="bg-orange-500 text-white hover:bg-orange-600">Stock Bajo</Badge>;
+        }
       case "Vencido":
         return <Badge variant="destructive">{estado}</Badge>;
       default:
@@ -146,7 +155,7 @@ const Inventario = () => {
     }
   };
 
-  const getDiasHastaVencimiento = (fecha_vencimiento?: string) => {
+  const getDiasHastaVencimiento = (fecha_vencimiento?: string | null) => {
     if (!fecha_vencimiento) return null;
     const hoy = new Date();
     const vencimiento = new Date(fecha_vencimiento);
@@ -162,6 +171,8 @@ const Inventario = () => {
         <div>
           <h1 className="text-3xl font-bold">Inventario</h1>
           <p className="text-muted-foreground mt-1">Gestiona tus productos y stock</p>
+          <p className="text-muted-foreground mt-1">Puedes agregar tus productos manualmente o mediante carga masiva.</p>
+
         </div>
 
         {/* Toolbar */}
@@ -183,6 +194,14 @@ const Inventario = () => {
                 >
                   <Upload className="h-4 w-4" />
                   Carga Masiva
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setMermasViewOpen(true)}
+                  className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Ver Mermas
                 </Button>
               </div>
               
@@ -310,25 +329,33 @@ const Inventario = () => {
                         <TableCell className="text-sm text-muted-foreground">
                           {producto.marca || '-'}
                         </TableCell>
-                        <TableCell className="font-semibold">
-                          {producto.stock}
+                        <TableCell>
+                          <span className={
+                            producto.stock <= 7 
+                              ? "font-bold text-red-600" 
+                              : producto.stock <= 15 
+                                ? "font-bold text-orange-600" 
+                                : "font-semibold"
+                          }>
+                            {producto.stock}
+                          </span>
                         </TableCell>
                         <TableCell>S/. {producto.precio_venta.toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{producto.categoria}</Badge>
                         </TableCell>
-                        <TableCell>{getEstadoBadge(producto.estado, producto.stock, producto.stock_critico)}</TableCell>
+                        <TableCell>{getEstadoBadge(producto.estado, producto.stock)}</TableCell>
                         <TableCell>
                           {diasVencimiento !== null && (
                             <div className="flex items-center gap-1">
                               {diasVencimiento <= 0 ? (
                                 <Badge variant="destructive" className="text-xs">Vencido</Badge>
                               ) : diasVencimiento <= 7 ? (
-                                <Badge className="bg-orange-500 text-white text-xs">⚠ {diasVencimiento}d</Badge>
+                                <Badge className="bg-orange-500 text-white text-xs">⚠ faltan {diasVencimiento} días</Badge>
                               ) : diasVencimiento <= 30 ? (
-                                <Badge className="bg-yellow-500 text-black text-xs">{diasVencimiento}d</Badge>
+                                <Badge className="bg-yellow-500 text-black text-xs">faltan {diasVencimiento} días</Badge>
                               ) : (
-                                <span className="text-xs text-muted-foreground">{diasVencimiento}d</span>
+                                <span className="text-xs text-muted-foreground"> faltan {diasVencimiento}  días</span>
                               )}
                             </div>
                           )}
@@ -448,6 +475,26 @@ const Inventario = () => {
           setCargaMasivaOpen(false);
         }}
       />
+
+      {/* Modal/Vista de Mermas dentro de Inventario */}
+      {mermasViewOpen && (
+        <Dialog open={mermasViewOpen} onOpenChange={setMermasViewOpen}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-2xl">
+                <AlertTriangle className="h-6 w-6 text-orange-600" />
+                Control de Mermas
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Gestiona productos vencidos, defectuosos, dañados y pérdidas de inventario
+              </p>
+            </DialogHeader>
+            <div className="py-4">
+              <ControlMermas />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

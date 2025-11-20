@@ -7,7 +7,7 @@ export const mermasRouter = Router();
 // Schema de validación
 const crearMermaSchema = z.object({
   producto_id: z.string().uuid(),
-  tipo_merma: z.enum(["vencido", "defectuoso", "robo", "perdida", "daño", "otro"]),
+  tipo_merma: z.enum(["vencido", "defectuoso", "robo", "perdida", "daño", "obsoleto", "otro"]),
   cantidad: z.number().int().positive(),
   motivo: z.string().optional(),
   registrado_por: z.string().optional(),

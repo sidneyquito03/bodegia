@@ -15,13 +15,12 @@ inventoryRouter.get("/products", async (_req, res) => {
       precio_venta::numeric::text AS precio_venta,
       categoria, 
       calcular_estado_producto(
-        stock, 
-        COALESCE(stock_critico, 10), 
+        stock,  
         COALESCE(stock_bajo, 20), 
         fecha_vencimiento
       ) as estado,
       imagen_url, proveedor_id, fecha_vencimiento, marca, medida_peso,
-      stock_critico, stock_bajo, created_at, updated_at
+      stock_bajo, created_at, updated_at
     FROM productos
     ORDER BY nombre
   `);
@@ -31,7 +30,7 @@ inventoryRouter.get("/products", async (_req, res) => {
     stock: Number(r.stock),
     precio_costo: Number(r.precio_costo),
     precio_venta: Number(r.precio_venta),
-    stock_critico: r.stock_critico != null ? Number(r.stock_critico) : null,
+    //stock_critico: r.stock_critico != null ? Number(r.stock_critico) : null,
     stock_bajo: r.stock_bajo != null ? Number(r.stock_bajo) : null,
   }));
 
@@ -51,7 +50,7 @@ const createSchema = z.object({
   fecha_vencimiento: z.string().nullable().optional(),
   marca: z.string().nullable().optional(),
   medida_peso: z.string().nullable().optional(),
-  stock_critico: z.number().int().min(0).optional(),
+  //stock_critico: z.number().int().min(0).optional(),
   stock_bajo: z.number().int().min(0).optional(),
 });
 
@@ -63,14 +62,14 @@ inventoryRouter.post("/", async (req, res) => {
       `INSERT INTO productos(
         nombre, codigo, stock, precio_costo, precio_venta, categoria,
         imagen_url, proveedor_id, fecha_vencimiento, marca, medida_peso,
-        stock_critico, stock_bajo
+        stock_bajo
       ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING 
         id, nombre, codigo, stock,
         precio_costo::numeric::text AS precio_costo,
         precio_venta::numeric::text AS precio_venta,
         categoria, estado, imagen_url, proveedor_id, fecha_vencimiento,
-        marca, medida_peso, stock_critico, stock_bajo, created_at, updated_at`,
+        marca, medida_peso, stock_bajo, created_at, updated_at`,
       [
         data.nombre,
         data.codigo,
@@ -83,7 +82,7 @@ inventoryRouter.post("/", async (req, res) => {
         data.fecha_vencimiento ?? null,
         data.marca ?? null,
         data.medida_peso ?? null,
-        data.stock_critico ?? 10,
+        //data.stock_critico ?? 10,
         data.stock_bajo ?? 20,
       ]
     );
@@ -140,7 +139,7 @@ inventoryRouter.patch("/:id", async (req, res) => {
     const permitidos = [
       'nombre', 'codigo', 'stock', 'precio_costo', 'precio_venta', 'categoria',
       'imagen_url', 'proveedor_id', 'fecha_vencimiento', 'marca', 'medida_peso',
-      'stock_critico', 'stock_bajo'
+      'stock_bajo'
     ];
     
     for (const key of permitidos) {
@@ -167,7 +166,7 @@ inventoryRouter.patch("/:id", async (req, res) => {
         precio_costo::numeric::text AS precio_costo,
         precio_venta::numeric::text AS precio_venta,
         categoria, estado, imagen_url, proveedor_id, fecha_vencimiento,
-        marca, medida_peso, stock_critico, stock_bajo, created_at, updated_at
+        marca, medida_peso, stock_bajo, created_at, updated_at
     `;
     
     const producto = await db.one(query, valores);
@@ -206,7 +205,7 @@ const itemSchema = z.object({
   medida_peso: z.string().optional(),
   fecha_vencimiento: z.string().optional(),
   imagen_url: z.string().optional(),
-  stock_critico: z.number().optional(),
+  //stock_critico: z.number().optional(),
   stock_bajo: z.number().optional(),
 });
 
@@ -244,7 +243,7 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
           `UPDATE productos
            SET nombre=$1, stock=$2, precio_costo=$3, precio_venta=$4, categoria=$5,
                proveedor_id=$6, marca=$7, medida_peso=$8, fecha_vencimiento=$9,
-               imagen_url=$10, stock_critico=$11, stock_bajo=$12, updated_at=NOW()
+               imagen_url=$10, stock_bajo=$12, updated_at=NOW()
            WHERE codigo=$13`,
           [
             i.nombre,
@@ -257,7 +256,6 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
             i.medida_peso,
             i.fecha_vencimiento,
             i.imagen_url,
-            i.stock_critico ?? 10,
             i.stock_bajo ?? 20,
             i.codigo,
           ]
@@ -266,7 +264,7 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
       } else {
         await db.none(
           `INSERT INTO productos(nombre,codigo,stock,precio_costo,precio_venta,categoria,
-            proveedor_id,marca,medida_peso,fecha_vencimiento,imagen_url,stock_critico,stock_bajo)
+            proveedor_id,marca,medida_peso,fecha_vencimiento,imagen_url,stock_bajo)
            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
           [
             i.nombre,
@@ -280,7 +278,7 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
             i.medida_peso,
             i.fecha_vencimiento,
             i.imagen_url,
-            i.stock_critico ?? 10,
+            //i.stock_critico ?? 10,
             i.stock_bajo ?? 20,
           ]
         );

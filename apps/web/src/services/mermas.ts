@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 
-export type TipoMerma = "vencido" | "defectuoso" | "robo" | "perdida" | "daño" | "otro";
+export type TipoMerma = "vencido" | "defectuoso" | "robo" | "perdida" | "daño" | "obsoleto" | "otro";
 
 export interface Merma {
   id: string;

@@ -21,7 +21,6 @@ export interface Producto {
   fecha_vencimiento?: string | null; 
   marca?: string | null;
   medida_peso?: string | null;
-  stock_critico?: number;
   stock_bajo?: number;
   created_at?: string;
   updated_at?: string;
@@ -41,7 +40,6 @@ export interface CrearProductoDTO {
   fecha_vencimiento?: string | null;
   marca?: string | null;
   medida_peso?: string | null;
-  stock_critico?: number;
   stock_bajo?: number;
 }
 

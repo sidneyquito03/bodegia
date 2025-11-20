@@ -8,58 +8,85 @@ import * as XLSX from "xlsx";
 import { importProductosJson} from "@/services/inventory";
 
 const FIELD_ALIASES: Record<string, string> = {
- nombre: "nombre",
+  nombre: "nombre",
+  "* nombre": "nombre",
+  "nombre*": "nombre",
   producto: "nombre",
   name: "nombre",
   "product name": "nombre",
 
   codigo: "codigo",
+  "* codigo": "codigo",
+  "codigo*": "codigo",
+  "* código": "codigo",
+  "código*": "codigo",
   "código": "codigo",
   sku: "codigo",
   cod: "codigo",
   "id producto": "codigo",
 
   stock: "stock",
+  "* stock": "stock",
+  "stock*": "stock",
+  "stock inicial": "stock",
+  "stock inicial*": "stock",
+  "* stock inicial": "stock",
   existencias: "stock",
   cantidad: "stock",
   qty: "stock",
 
   "precio_costo": "precio_costo",
+  "* precio_costo": "precio_costo",
+  "precio_costo*": "precio_costo",
+  "* precio costo": "precio_costo",
+  "precio costo*": "precio_costo",
   "precio costo": "precio_costo",
   costo: "precio_costo",
   cost: "precio_costo",
 
   "precio_venta": "precio_venta",
+  "* precio_venta": "precio_venta",
+  "precio_venta*": "precio_venta",
+  "* precio venta": "precio_venta",
+  "precio venta*": "precio_venta",
   "precio venta": "precio_venta",
   venta: "precio_venta",
   price: "precio_venta",
 
   categoria: "categoria",
-  categoría: "categoria",
+  "* categoria": "categoria",
+  "categoria*": "categoria",
+  "* categoría": "categoria",
+  "categoría*": "categoria",
+  "categoría": "categoria",
   category: "categoria",
 
   estado: "estado",
+  "estado*": "estado",
   status: "estado",
 
-  fecha_vencimiento: "fecha_vencimiento",
-  vencimiento: "fecha_vencimiento",
+  "fecha_vencimiento": "fecha_vencimiento",
   "fecha vencimiento": "fecha_vencimiento",
+  "fecha vencimiento*": "fecha_vencimiento",
+  vencimiento: "fecha_vencimiento",
   expiry: "fecha_vencimiento",
   "exp date": "fecha_vencimiento",
 
-  proveedor: "proveedor_nombre",     
+  proveedor: "proveedor_nombre",
+  "proveedor nombre": "proveedor_nombre",
   "proveedor id": "proveedor_id",
+  "proveedor id / ruc": "proveedor_id",
   marca: "marca",
-  "brand": "marca",
+  brand: "marca",
   medida: "medida_peso",
+  "medida / peso": "medida_peso",
   "medida/peso": "medida_peso",
   peso: "medida_peso",
   unidad: "medida_peso",
-  "stock critico": "stock_critico",
-  "stock crítico": "stock_critico",
   "stock bajo": "stock_bajo",
   imagen: "imagen_url",
   "imagen url": "imagen_url",
+  "url imagen": "imagen_url",
 };
 
 function normalizeKey(k: string) {
@@ -121,8 +148,7 @@ function sanitizeRow(row: any) {
     proveedor_nombre: row.proveedor_nombre ? String(row.proveedor_nombre).trim() : null,
     marca: row.marca ? String(row.marca).trim() : null,
     medida_peso: row.medida_peso ? String(row.medida_peso).trim() : null,
-    stock_critico: row.stock_critico != null ? Number(row.stock_critico) || 10 : 10,
-    stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 20 : 20,
+    stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 10 : 10,
     imagen_url: row.imagen_url ? String(row.imagen_url).trim() : null,
   };
 }
@@ -140,28 +166,18 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
   const { toast } = useToast();
 
   const downloadTemplate = () => {
-    const template = [
-      {
-        nombre: "Ejemplo Producto",
-        codigo: "PROD001",
-        stock: 100,
-        precio_costo: 10.5,
-        precio_venta: 15.0,
-        categoria: "general",
-        marca: "MarcaX",
-        medida_peso: "500g",
-        proveedor_nombre: "Proveedor S.A.",
-        proveedor_id: "",
-        fecha_vencimiento: "2025-12-31",
-        imagen_url: "https://ejemplo.com/imagen.jpg",
-        stock_critico: 10,
-        stock_bajo: 20,
-      },
-    ];
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Productos");
-    XLSX.writeFile(wb, "plantilla_productos.xlsx");
+    // Descargar plantilla Excel personalizada desde /public
+    const link = document.createElement('a');
+    link.href = '/plantilla_carga_masiva.xlsx';
+    link.download = 'plantilla_carga_masiva_bodegia.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Plantilla descargada",
+      description: "Los campos con * son obligatorios. Complete primero esos campos.",
+    });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/inventario", icon: Package, label: "Inventario" },
-  { to: "/fiados", icon: Receipt, label: "Fiados" },
   { to: "/pos", icon: ShoppingCart, label: "Punto de Venta" },
+  { to: "/fiados", icon: Receipt, label: "Fiados" },
   { to: "/reportes", icon: TrendingUp, label: "Reportes" },
   { to: "/reportes-sunat", icon: FileText, label: "Reportes SUNAT" },
   { to: "/proveedores", icon: Store, label: "Proveedores" },

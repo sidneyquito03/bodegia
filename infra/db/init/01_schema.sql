@@ -29,7 +29,6 @@ create table if not exists productos(
   fecha_vencimiento date,
   marca text,
   medida_peso text,
-  stock_critico int default 10,
   stock_bajo int default 20,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -127,10 +126,10 @@ create index if not exists idx_mermas_producto on mermas(producto_id);
 create index if not exists idx_mermas_fecha on mermas(fecha_registro);
 
 -- Función para calcular el estado automáticamente
--- Solo 3 estados: Disponible (verde), Stock Bajo (amarillo/rojo según urgencia), Vencido
+-- Solo 3 estados: Disponible (verde), Stock Bajo (naranja/rojo según umbrales FIJOS), Vencido
+-- Umbrales fijos: ≤7 unidades = ROJO (urgente), ≤15 unidades = NARANJA (advertencia)
 create or replace function calcular_estado_producto(
   p_stock int,
-  p_stock_critico int,
   p_stock_bajo int,
   p_fecha_vencimiento date
 ) returns text as $$
@@ -147,14 +146,15 @@ begin
     end if;
   end if;
   
-  -- Validación por stock: Solo 3 estados
-  -- Stock Bajo incluye tanto stock crítico como stock bajo (diferenciados por color en frontend)
-  if p_stock <= p_stock_critico then
-    return 'Stock Bajo'; -- Urgente (rojo en UI)
-  elsif p_stock <= p_stock_bajo then
-    return 'Stock Bajo'; -- Planificar compra (amarillo en UI)
+  -- Validación por stock con umbrales FIJOS (no por producto)
+  -- Alerta ROJA: Stock ≤ 7 unidades (urgente)
+  if p_stock <= 7 then
+    return 'Stock Bajo'; -- Se marcará como rojo en frontend
+  -- Alerta NARANJA: Stock ≤ 15 unidades (advertencia)
+  elsif p_stock <= 15 then
+    return 'Stock Bajo'; -- Se marcará como naranja en frontend
   else
-    return 'Disponible'; -- Verde en UI
+    return 'Disponible';
   end if;
 end;
 $$ language plpgsql immutable;
@@ -165,8 +165,7 @@ returns trigger as $$
 begin
   new.estado := calcular_estado_producto(
     new.stock,
-    coalesce(new.stock_critico, 10),
-    coalesce(new.stock_bajo, 20),
+    coalesce(new.stock_bajo, 10),
     new.fecha_vencimiento
   );
   return new;
@@ -175,7 +174,7 @@ $$ language plpgsql;
 
 drop trigger if exists trigger_actualizar_estado on productos;
 create trigger trigger_actualizar_estado
-  before insert or update of stock, stock_critico, stock_bajo, fecha_vencimiento
+  before insert or update of stock, stock_bajo, fecha_vencimiento
   on productos
   for each row
   execute function actualizar_estado_producto();
