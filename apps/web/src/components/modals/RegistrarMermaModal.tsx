@@ -20,6 +20,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { createMerma, type TipoMerma } from "@/services/mermas";
 import { listProductos, type Producto } from "@/services/inventory";
+import { Search, Package, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface RegistrarMermaModalProps {
   isOpen: boolean;
@@ -134,51 +136,127 @@ export const RegistrarMermaModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Registrar Merma</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-teal-900">Registrar Merma</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Registra productos dañados, vencidos o perdidos para actualizar el inventario
+          </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Búsqueda de producto */}
-          <div className="space-y-2">
-            <Label>Buscar Producto</Label>
-            <Input
-              placeholder="Buscar por nombre o código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-2">
+          {/* Búsqueda y selección de producto con cards */}
+          <div className="space-y-3">
+            <Label>Buscar y Seleccionar Producto *</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre, código o marca..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
 
-          {/* Selección de producto */}
-          <div className="space-y-2">
-            <Label htmlFor="producto">Producto *</Label>
-            <Select
-              value={formData.producto_id}
-              onValueChange={(value) => setFormData({ ...formData, producto_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar producto" />
-              </SelectTrigger>
-              <SelectContent>
-                {productosFiltrados.length === 0 ? (
-                  <div className="p-2 text-sm text-muted-foreground text-center">
-                    No se encontraron productos
-                  </div>
-                ) : (
-                  productosFiltrados.map((producto) => (
-                    <SelectItem key={producto.id} value={producto.id}>
-                      {producto.nombre} ({producto.codigo}) - Stock: {producto.stock}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            {/* Cards de productos */}
+            <div className="border rounded-lg max-h-[300px] overflow-y-auto bg-muted/20">
+              {productosFiltrados.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No se encontraron productos</p>
+                  <p className="text-xs mt-1">Intenta con otro término de búsqueda</p>
+                </div>
+              ) : (
+                <div className="p-2 space-y-2">
+                  {productosFiltrados.slice(0, 50).map((producto) => (
+                    <button
+                      key={producto.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, producto_id: producto.id })}
+                      className={`w-full p-3 rounded-lg border-2 transition-all hover:border-teal-400 hover:bg-teal-50/50 ${
+                        formData.producto_id === producto.id
+                          ? "border-teal-600 bg-teal-50 ring-2 ring-teal-200"
+                          : "border-border bg-background"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Imagen del producto */}
+                        <div className="flex-shrink-0">
+                          {(producto as any).imagen_url ? (
+                            <img
+                              src={(producto as any).imagen_url}
+                              alt={producto.nombre}
+                              className="w-12 h-12 object-cover rounded border"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/48?text=Sin+Img';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-muted rounded border flex items-center justify-center">
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Info del producto */}
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm truncate">{producto.nombre}</p>
+                            {formData.producto_id === producto.id && (
+                              <Check className="h-4 w-4 text-teal-600 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            <span className="font-mono">#{producto.codigo}</span>
+                            {(producto as any).marca && (
+                              <>
+                                <span>•</span>
+                                <span>{(producto as any).marca}</span>
+                              </>
+                            )}
+                            <span>•</span>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                producto.stock <= 7 
+                                  ? "border-red-300 text-red-700 bg-red-50" 
+                                  : producto.stock <= 15
+                                  ? "border-orange-300 text-orange-700 bg-orange-50"
+                                  : "border-green-300 text-green-700 bg-green-50"
+                              }`}
+                            >
+                              Stock: {producto.stock}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Precio */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs text-muted-foreground">Costo</p>
+                          <p className="font-semibold text-sm">S/. {producto.precio_costo.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  {productosFiltrados.length > 50 && (
+                    <p className="text-xs text-center text-muted-foreground p-2">
+                      Mostrando los primeros 50 resultados. Usa el buscador para refinar.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
             {productoSeleccionado && (
-              <p className="text-sm text-muted-foreground">
-                Stock disponible: {productoSeleccionado.stock} unidades | Costo: S/.{" "}
-                {productoSeleccionado.precio_costo.toFixed(2)}
-              </p>
+              <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                <p className="text-sm font-medium text-teal-900">
+                  ✅ Producto seleccionado: {productoSeleccionado.nombre}
+                </p>
+                <p className="text-xs text-teal-700 mt-1">
+                  Stock disponible: {productoSeleccionado.stock} unidades | 
+                  Costo unitario: S/. {productoSeleccionado.precio_costo.toFixed(2)}
+                </p>
+              </div>
             )}
           </div>
 

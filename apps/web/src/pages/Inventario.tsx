@@ -195,27 +195,28 @@ const Inventario = () => {
                   <Upload className="h-4 w-4" />
                   Carga Masiva
                 </Button>
+              </div>
+              
+              <div className="flex gap-2 items-center w-full md:w-auto">
+                <div className="relative flex-1 md:w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Buscar producto..." 
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </div>
                 <Button 
-                  variant="outline" 
                   onClick={() => setMermasViewOpen(true)}
-                  className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50"
+                  className="gap-2 bg-teal-600 hover:bg-teal-700 text-white whitespace-nowrap"
                 >
                   <AlertTriangle className="h-4 w-4" />
                   Ver Mermas
                 </Button>
-              </div>
-              
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Buscar producto..." 
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                />
               </div>
             </div>
 
@@ -476,20 +477,34 @@ const Inventario = () => {
         }}
       />
 
-      {/* Modal/Vista de Mermas dentro de Inventario */}
+      {/* Modal/Vista de Mermas dentro de Inventario - SIN SIDEBAR */}
       {mermasViewOpen && (
         <Dialog open={mermasViewOpen} onOpenChange={setMermasViewOpen}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-2xl">
-                <AlertTriangle className="h-6 w-6 text-orange-600" />
-                Control de Mermas
-              </DialogTitle>
-              <p className="text-sm text-muted-foreground">
-                Gestiona productos vencidos, defectuosos, dañados y pérdidas de inventario
-              </p>
-            </DialogHeader>
-            <div className="py-4">
+          <DialogContent className="max-w-[95vw] w-full max-h-[95vh] overflow-y-auto p-0">
+            {/* Header con badge de ubicación */}
+            <div className="sticky top-0 z-10 bg-white border-b p-6 pb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-teal-100 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-teal-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Control de Mermas</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Gestión y seguimiento de pérdidas, productos vencidos y defectuosos
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-teal-100 text-teal-700 text-sm font-medium rounded-full border border-teal-300">
+                    📦 Inventario
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Contenido de Mermas */}
+            <div className="p-6 pt-2">
               <ControlMermas />
             </div>
           </DialogContent>

@@ -140,16 +140,10 @@ export const DetalleProductoModal = ({
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <AlertTriangle className="h-4 w-4" />
-                Stock Crítico
-              </div>
-              <p className="text-lg">{producto.stock_critico ?? 10} unidades</p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <AlertTriangle className="h-4 w-4" />
                 Stock Bajo
               </div>
+              <p className="text-lg">{(producto as any).stock_bajo ?? 15} unidades</p>
+            </div>
               <p className="text-lg">{producto.stock_bajo ?? 20} unidades</p>
             </div>
           </div>
@@ -263,7 +257,6 @@ export const DetalleProductoModal = ({
               </div>
             </>
           )}
-        </div>
       </DialogContent>
     </Dialog>
   );

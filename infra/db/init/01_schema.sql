@@ -101,7 +101,6 @@ create table if not exists compras_proveedores(
   created_at timestamptz default now()
 );
 
--- Tabla de mermas/pérdidas (vencidos, defectuosos, robos, etc.)
 create table if not exists mermas(
   id uuid default gen_random_uuid() primary key,
   producto_id uuid references productos(id),

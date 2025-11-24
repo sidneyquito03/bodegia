@@ -72,9 +72,16 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
     })();
   }, []);
 
-  // hidratar form cuando llega producto o al abrir/cerrar
+  // hidratar form cuando llega producto o al abrir modal
   useEffect(() => {
+    // Solo ejecutar cuando el modal está abierto
+    if (!isOpen) {
+      return;
+    }
+    
     if (producto) {
+      // Modo edición - hidratar con datos del producto
+      const productoExtendido = producto as any;
       setFormData({
         nombre: producto.nombre,
         codigo: producto.codigo,
@@ -82,18 +89,19 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         precio_costo: producto.precio_costo,
         precio_venta: producto.precio_venta,
         categoria: producto.categoria,
-        estado: (producto as any).estado ?? "Disponible",
-        imagen_url: (producto as any).imagen_url ?? null,
-
-        proveedor_id: (producto as any).proveedor_id ?? null,
-        fecha_vencimiento: (producto as any).fecha_vencimiento ?? null,
-        marca: (producto as any).marca ?? null,
-        medida_peso: (producto as any).medida_peso ?? null,
-        stock_bajo: (producto as any).stock_bajo ?? 10,
+        estado: producto.estado,
+        imagen_url: productoExtendido.imagen_url ?? null,
+        proveedor_id: productoExtendido.proveedor_id ?? null,
+        fecha_vencimiento: productoExtendido.fecha_vencimiento ?? null,
+        marca: productoExtendido.marca ?? null,
+        medida_peso: productoExtendido.medida_peso ?? null,
+        stock_bajo: productoExtendido.stock_bajo ?? 10,
       });
-      setImagenPreview((producto as any).imagen_url ?? null);
-      setImagenUrlInput((producto as any).imagen_url ?? "");
+      setImagenPreview(productoExtendido.imagen_url ?? null);
+      setImagenUrlInput(productoExtendido.imagen_url ?? "");
+      setImagenFile(null);
     } else {
+      // Modo agregar - resetear formulario
       setFormData({
         nombre: "",
         codigo: "",
@@ -103,7 +111,6 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         categoria: "",
         estado: "Disponible",
         imagen_url: null,
-
         proveedor_id: null,
         fecha_vencimiento: null,
         marca: null,
@@ -112,8 +119,8 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       });
       setImagenPreview(null);
       setImagenUrlInput("");
+      setImagenFile(null);
     }
-    setImagenFile(null);
     setMostrarNuevaCategoria(false);
     setNuevaCategoria("");
   }, [producto, isOpen]);
@@ -205,13 +212,10 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
 
   return (
   <Dialog open={isOpen} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto border-none shadow-2xl">
-        {/* Header con gradiente */}
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-10 rounded-t-lg -z-10"></div>
-        
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto border-none">
         <DialogHeader className="relative">
-          <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
-            <Sparkles className="h-7 w-7 text-purple-500" />
+<DialogTitle className="text-xl font-bold bg-clip-text text-teal-600 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-teal-600" />
             {producto ? "Editar Producto" : "Agregar Nuevo Producto"}
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
@@ -219,10 +223,10 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
           </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-2">
           {/* Imagen - Opción 1: Subir archivo */}
-          <div className="space-y-2 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-100">
-            <Label className="text-sm font-semibold text-blue-900">📸 Imagen del Producto (Subir archivo)</Label>
+          <div className="space-y-2 p-4 bg-gradient-to-br from-teal-10 to-emerald-50 rounded-lg border border-teal-400">
+            <Label className="text-sm font-semibold text-teal-800">Imagen del Producto (Subir archivo)</Label>
             <div className="flex items-center gap-4">
               {imagenPreview && !imagenUrlInput ? (
                 <div className="relative">
@@ -247,7 +251,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                 </div>
               ) : (
                 <label className="cursor-pointer">
-                  <div className="w-32 h-32 border-2 border-dashed rounded-lg flex items-center justify-center hover:bg-muted/50 transition-colors">
+                  <div className="w-32 h-32 m-2 border-2 border-dashed rounded-lg flex items-center justify-center hover:bg-muted/50 transition-colors">
                     <div className="text-center">
                       <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">Subir imagen</span>
@@ -328,7 +332,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="stock">Stock</Label>
               <Input
@@ -422,7 +426,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="stock_bajo">Stock Bajo (umbral personalizado)</Label>
               <Input
                 id="stock_bajo"
@@ -512,9 +516,9 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
             </Button>
             <Button 
               type="submit" 
-              className="min-w-[120px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg"
+              className="min-w-[120px] bg-gradient-primary text-white font-semibold shadow-lg hover:opacity-90 transition-opacity"
             >
-              {producto ? "💾 Actualizar" : "✨ Agregar"}
+              {producto ? "Actualizar" : "Agregar"}
             </Button>
           </DialogFooter>
         </form>
