@@ -30,6 +30,32 @@ create table if not exists productos(
   marca text,
   medida_peso text,
   stock_bajo int default 20,
+  
+  -- Campos adicionales para personalización según tipo de MYPE
+  ubicacion_almacen text,                    -- Ej: "Estante A2", "Refrigerador 1", "Almacén Principal"
+  lote_numero text,                          -- Número de lote del producto
+  codigo_barras_adicional text,              -- Código de barras alternativo o personalizado
+  unidad_medida text,                        -- Ej: "unidad", "caja", "paquete", "kg", "litro"
+  descuento_maximo numeric(5,2) default 0,   -- Porcentaje máximo de descuento permitido (0-100)
+  margen_minimo numeric(5,2) default 0,      -- Margen mínimo de ganancia permitido (porcentaje)
+  es_perecedero boolean default false,       -- Si requiere control de vencimiento estricto
+  requiere_refrigeracion boolean default false, -- Si necesita cadena de frío
+  temperatura_almacenamiento text,           -- Ej: "Ambiente", "2-8°C", "Congelado"
+  dias_vida_util int,                        -- Días de vida útil después de abrir
+  es_fraccionable boolean default false,     -- Si se puede vender por unidades menores
+  peso_unitario numeric(10,3),               -- Peso del producto individual (para cálculos)
+  volumen_unitario numeric(10,3),            -- Volumen del producto (para almacenaje)
+  alto_cm numeric(8,2),                      -- Dimensiones para almacenamiento
+  ancho_cm numeric(8,2),
+  profundo_cm numeric(8,2),
+  color text,                                -- Color del producto (ropa, pinturas, etc.)
+  talla text,                                -- Talla (ropa, calzado)
+  material text,                             -- Material principal (ferreterías, muebles)
+  garantia_dias int,                         -- Días de garantía del producto
+  notas_internas text,                       -- Observaciones internas
+  visible_catalogo boolean default true,     -- Si aparece en catálogo/vitrina
+  permite_devolucion boolean default true,   -- Si acepta devoluciones
+  
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

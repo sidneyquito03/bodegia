@@ -62,6 +62,13 @@ export async function createMerma(dto: CrearMermaDTO): Promise<Merma> {
   });
 }
 
+export async function updateMerma(id: string, dto: CrearMermaDTO): Promise<Merma> {
+  return api<Merma>(`/mermas/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(dto),
+  });
+}
+
 export async function deleteMerma(id: string): Promise<void> {
   await api(`/mermas/${id}`, { method: "DELETE" });
 }

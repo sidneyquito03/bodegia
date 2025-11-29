@@ -188,15 +188,14 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       }
     }
 
-    // Normalizamos/parseamos
-    const payload: Omit<Producto, "id"> = {
+    // Normalizamos/parseamos - no enviamos estado porque se calcula en el backend
+    const payload: Omit<Producto, "id" | "estado" | "created_at" | "updated_at"> = {
       nombre: formData.nombre.trim(),
       codigo: formData.codigo.trim(),
       stock: Number(formData.stock) || 0,
       precio_costo: Number(formData.precio_costo) || 0,
       precio_venta: Number(formData.precio_venta) || 0,
       categoria: formData.categoria.toLowerCase().trim(),
-      estado: formData.estado,
       imagen_url: imagenUrl ?? null,
 
       proveedor_id: formData.proveedor_id || null,
@@ -206,7 +205,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       stock_bajo: Number(formData.stock_bajo) || 10,
     };
 
-    onSave(payload);
+    onSave(payload as any);
     onClose();
   }
 

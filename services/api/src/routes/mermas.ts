@@ -8,7 +8,7 @@ export const mermasRouter = Router();
 const crearMermaSchema = z.object({
   producto_id: z.string().uuid(),
   tipo_merma: z.enum(["vencido", "defectuoso", "robo", "perdida", "daño", "obsoleto", "otro"]),
-  cantidad: z.number().int().positive(),
+  cantidad: z.number().int().min(1),
   motivo: z.string().optional(),
   registrado_por: z.string().optional(),
 });
@@ -75,6 +75,96 @@ mermasRouter.post("/", async (req, res) => {
   } catch (error: any) {
     console.error("Error registrando merma:", error);
     res.status(400).json({ message: error.message || "Error al registrar merma" });
+  }
+});
+
+/**
+ * PUT /mermas/:id - Actualizar una merma existente
+ */
+mermasRouter.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = crearMermaSchema.parse(req.body);
+    
+    const resultado = await db.tx(async (t) => {
+      // 1. Obtener la merma actual
+      const mermaActual = await db.oneOrNone(
+        `SELECT m.*, p.stock as stock_actual, p.precio_costo
+         FROM mermas m
+         JOIN productos p ON m.producto_id = p.id
+         WHERE m.id = $1`,
+        [id]
+      );
+      
+      if (!mermaActual) {
+        throw new Error("Merma no encontrada");
+      }
+      
+      // 2. Restaurar el stock de la cantidad anterior
+      await db.none(
+        "UPDATE productos SET stock = stock + $1 WHERE id = $2",
+        [mermaActual.cantidad, mermaActual.producto_id]
+      );
+      
+      // 3. Verificar stock disponible para nueva cantidad
+      const producto = await db.one(
+        "SELECT stock, precio_costo FROM productos WHERE id = $1",
+        [data.producto_id]
+      );
+      
+      if (producto.stock < data.cantidad) {
+        // Restaurar la cantidad anterior si no hay suficiente stock
+        await db.none(
+          "UPDATE productos SET stock = stock - $1 WHERE id = $2",
+          [mermaActual.cantidad, mermaActual.producto_id]
+        );
+        throw new Error(
+          `Stock insuficiente. Disponible: ${producto.stock}, Solicitado: ${data.cantidad}`
+        );
+      }
+      
+      // 4. Calcular nuevo costo
+      const costo_unitario = Number(producto.precio_costo);
+      const costo_total = costo_unitario * data.cantidad;
+      
+      // 5. Actualizar la merma
+      const mermaActualizada = await db.one(
+        `UPDATE mermas SET
+          producto_id = $1,
+          tipo_merma = $2,
+          cantidad = $3,
+          costo_unitario = $4,
+          costo_total = $5,
+          motivo = $6,
+          registrado_por = $7
+         WHERE id = $8
+         RETURNING id, producto_id, tipo_merma, cantidad, costo_unitario,
+                   costo_total, motivo, registrado_por, fecha_registro, created_at`,
+        [
+          data.producto_id,
+          data.tipo_merma,
+          data.cantidad,
+          costo_unitario,
+          costo_total,
+          data.motivo ?? null,
+          data.registrado_por ?? "Sistema",
+          id,
+        ]
+      );
+      
+      // 6. Descontar nueva cantidad del stock
+      await db.none(
+        "UPDATE productos SET stock = stock - $1 WHERE id = $2",
+        [data.cantidad, data.producto_id]
+      );
+      
+      return mermaActualizada;
+    });
+    
+    res.json(resultado);
+  } catch (error: any) {
+    console.error("Error actualizando merma:", error);
+    res.status(400).json({ message: error.message || "Error al actualizar merma" });
   }
 });
 

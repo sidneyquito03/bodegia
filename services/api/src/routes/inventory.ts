@@ -63,7 +63,7 @@ inventoryRouter.post("/", async (req, res) => {
         nombre, codigo, stock, precio_costo, precio_venta, categoria,
         imagen_url, proveedor_id, fecha_vencimiento, marca, medida_peso,
         stock_bajo
-      ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING 
         id, nombre, codigo, stock,
         precio_costo::numeric::text AS precio_costo,
@@ -82,7 +82,6 @@ inventoryRouter.post("/", async (req, res) => {
         data.fecha_vencimiento ?? null,
         data.marca ?? null,
         data.medida_peso ?? null,
-        //data.stock_critico ?? 10,
         data.stock_bajo ?? 20,
       ]
     );
@@ -243,8 +242,8 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
           `UPDATE productos
            SET nombre=$1, stock=$2, precio_costo=$3, precio_venta=$4, categoria=$5,
                proveedor_id=$6, marca=$7, medida_peso=$8, fecha_vencimiento=$9,
-               imagen_url=$10, stock_bajo=$12, updated_at=NOW()
-           WHERE codigo=$13`,
+               imagen_url=$10, stock_bajo=$11, updated_at=NOW()
+           WHERE codigo=$12`,
           [
             i.nombre,
             i.stock,
@@ -265,7 +264,7 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
         await db.none(
           `INSERT INTO productos(nombre,codigo,stock,precio_costo,precio_venta,categoria,
             proveedor_id,marca,medida_peso,fecha_vencimiento,imagen_url,stock_bajo)
-           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
           [
             i.nombre,
             i.codigo,
@@ -278,7 +277,6 @@ inventoryImportRouter.post("/import-json", async (req, res) => {
             i.medida_peso,
             i.fecha_vencimiento,
             i.imagen_url,
-            //i.stock_critico ?? 10,
             i.stock_bajo ?? 20,
           ]
         );

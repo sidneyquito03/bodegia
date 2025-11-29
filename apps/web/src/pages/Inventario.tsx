@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Layout } from "../components/Layout";
-import { Card } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
@@ -177,46 +177,50 @@ const Inventario = () => {
 
         {/* Toolbar */}
         <Card className="p-4 shadow-card">
+          <CardContent>
           <div className="space-y-4">
+            {/* Primera fila: Botones de acción y buscador */}
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={() => {
-                  setEditingProducto(undefined);
-                  setModalOpen(true);
-                }} className="gap-2">
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    setEditingProducto(undefined);
+                    setModalOpen(true);
+                  }}
+                  className="gap-2 bg-gradient-primary text-white font-semibold shadow-lg hover:opacity-90"
+                >
                   <Plus className="h-4 w-4" />
                   Agregar Producto
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setCargaMasivaOpen(true)}
-                  className="gap-2"
+                  className="gap-2 border-teal-600 text-teal-600 hover:bg-teal-50"
                 >
                   <Upload className="h-4 w-4" />
                   Carga Masiva
                 </Button>
-              </div>
-              
-              <div className="flex gap-2 items-center w-full md:w-auto">
-                <div className="relative flex-1 md:w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar producto..." 
-                    className="pl-10"
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  />
-                </div>
                 <Button 
                   onClick={() => setMermasViewOpen(true)}
-                  className="gap-2 bg-teal-600 hover:bg-teal-700 text-white whitespace-nowrap"
+                  className="gap-2 bg-teal-600 hover:bg-teal-700 text-white"
                 >
                   <AlertTriangle className="h-4 w-4" />
                   Ver Mermas
                 </Button>
+              </div>
+              
+              {/* Buscador */}
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar producto..." 
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
             </div>
 
@@ -271,6 +275,7 @@ const Inventario = () => {
               </Select>
             </div>
           </div>
+        </CardContent>
         </Card>
 
         {/* Table */}
@@ -485,8 +490,8 @@ const Inventario = () => {
             <div className="sticky top-0 z-10 bg-white border-b p-6 pb-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-teal-100 rounded-lg">
-                    <AlertTriangle className="h-6 w-6 text-teal-600" />
+                  <div className="p-2 bg-teal-500 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-white" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold">Control de Mermas</h2>
@@ -496,7 +501,7 @@ const Inventario = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-teal-100 text-teal-700 text-sm font-medium rounded-full border border-teal-300">
+                  <span className="px-3 py-1 bg-teal-500 text-white text-sm font-medium rounded-full border border-teal-300">
                     📦 Inventario
                   </span>
                 </div>

@@ -7,7 +7,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input} from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -18,21 +18,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { createMerma, type TipoMerma } from "@/services/mermas";
+import { createMerma, updateMerma, type TipoMerma } from "@/services/mermas";
 import { listProductos, type Producto } from "@/services/inventory";
 import { Search, Package, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Sparkles } from "lucide-react";
+import type { Merma } from "@/services/mermas";
 
 interface RegistrarMermaModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  mermaToEdit?: Merma | null;
 }
 
 export const RegistrarMermaModal = ({
   isOpen,
   onClose,
   onSuccess,
+  mermaToEdit,
 }: RegistrarMermaModalProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -49,16 +53,29 @@ export const RegistrarMermaModal = ({
   useEffect(() => {
     if (isOpen) {
       cargarProductos();
-      setFormData({
-        producto_id: "",
-        tipo_merma: "vencido",
-        cantidad: 1,
-        motivo: "",
-        registrado_por: "",
-      });
+      
+      if (mermaToEdit) {
+        // Modo edición: cargar datos existentes
+        setFormData({
+          producto_id: mermaToEdit.producto_id,
+          tipo_merma: mermaToEdit.tipo_merma,
+          cantidad: mermaToEdit.cantidad,
+          motivo: mermaToEdit.motivo || "",
+          registrado_por: mermaToEdit.registrado_por || "",
+        });
+      } else {
+        // Modo crear: limpiar formulario
+        setFormData({
+          producto_id: "",
+          tipo_merma: "vencido",
+          cantidad: 1,
+          motivo: "",
+          registrado_por: "",
+        });
+      }
       setSearchTerm("");
     }
-  }, [isOpen]);
+  }, [isOpen, mermaToEdit]);
 
   const cargarProductos = async () => {
     try {
@@ -109,24 +126,41 @@ export const RegistrarMermaModal = ({
 
     setLoading(true);
     try {
-      await createMerma({
-        producto_id: formData.producto_id,
-        tipo_merma: formData.tipo_merma,
-        cantidad: formData.cantidad,
-        motivo: formData.motivo || undefined,
-        registrado_por: formData.registrado_por || undefined,
-      });
+      if (mermaToEdit) {
+        // Modo edición
+        await updateMerma(mermaToEdit.id, {
+          producto_id: formData.producto_id,
+          tipo_merma: formData.tipo_merma,
+          cantidad: formData.cantidad,
+          motivo: formData.motivo || undefined,
+          registrado_por: formData.registrado_por || undefined,
+        });
 
-      toast({
-        title: "Merma registrada",
-        description: "El registro de merma se creó correctamente y el stock fue actualizado",
-      });
+        toast({
+          title: "Merma actualizada",
+          description: "El registro de merma se actualizó correctamente",
+        });
+      } else {
+        // Modo crear
+        await createMerma({
+          producto_id: formData.producto_id,
+          tipo_merma: formData.tipo_merma,
+          cantidad: formData.cantidad,
+          motivo: formData.motivo || undefined,
+          registrado_por: formData.registrado_por || undefined,
+        });
+
+        toast({
+          title: "Merma registrada",
+          description: "El registro de merma se creó correctamente y el stock fue actualizado",
+        });
+      }
 
       onSuccess();
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.message ?? "No se pudo registrar la merma",
+        description: error?.message ?? "No se pudo guardar la merma",
         variant: "destructive",
       });
     } finally {
@@ -135,31 +169,40 @@ export const RegistrarMermaModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-teal-900">Registrar Merma</DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Registra productos dañados, vencidos o perdidos para actualizar el inventario
-          </p>
-        </DialogHeader>
+   <Dialog open={isOpen} onOpenChange={onClose}>
+  <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto border-none">
 
-        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-2">
-          {/* Búsqueda y selección de producto con cards */}
+    <DialogHeader className="relative">
+      <DialogTitle className="text-xl font-bold bg-clip-text text-teal-600 flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-teal-600" />
+        {mermaToEdit ? "Editar Merma" : "Registrar Merma"}
+      </DialogTitle>
+
+      <p className="text-sm text-muted-foreground mt-2">
+        {mermaToEdit 
+          ? "Modifica los datos de la merma registrada" 
+          : "Registra productos dañados, vencidos o perdidos para actualizar el inventario"}
+      </p>
+    </DialogHeader>
+
+
+        <form onSubmit={handleSubmit} className="space-y-7 overflow-y-auto flex-1 pr-2">
           <div className="space-y-3">
             <Label>Buscar y Seleccionar Producto *</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, código o marca..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            
+       <div className="relative">
+  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+  <Input
+    placeholder="Buscar por nombre, código o marca..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="pl-9 focus-visible:ring-teal-400"
+  />
+</div>
+
 
             {/* Cards de productos */}
-            <div className="border rounded-lg max-h-[300px] overflow-y-auto bg-muted/20">
+            <div className="border rounded-lg max-h-[300px] overflow-y-auto bg-teal-50">
               {productosFiltrados.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -283,11 +326,11 @@ export const RegistrarMermaModal = ({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              {formData.tipo_merma === "vencido" && "⚡ Típico de bodegas/alimentos"}
-              {formData.tipo_merma === "defectuoso" && "⚡ Típico de ferreterías/tiendas"}
-              {formData.tipo_merma === "daño" && "⚡ Producto dañado durante almacenamiento"}
-              {formData.tipo_merma === "robo" && "⚡ Pérdida por sustracción"}
-              {formData.tipo_merma === "obsoleto" && "⚡ Producto fuera de línea/tendencia"}
+              {formData.tipo_merma === "vencido" && " Típico de bodegas/alimentos"}
+              {formData.tipo_merma === "defectuoso" && " Típico de ferreterías/tiendas"}
+              {formData.tipo_merma === "daño" && " Producto dañado durante almacenamiento"}
+              {formData.tipo_merma === "robo" && " Pérdida por sustracción"}
+              {formData.tipo_merma === "obsoleto" && " Producto fuera de línea/tendencia"}
             </p>
           </div>
 

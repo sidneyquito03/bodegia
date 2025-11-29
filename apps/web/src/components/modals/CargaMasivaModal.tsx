@@ -9,25 +9,25 @@ import { importProductosJson} from "@/services/inventory";
 
 const FIELD_ALIASES: Record<string, string> = {
   nombre: "nombre",
-  "* nombre": "nombre",
   "nombre*": "nombre",
+  "* nombre": "nombre",
   producto: "nombre",
   name: "nombre",
   "product name": "nombre",
 
   codigo: "codigo",
-  "* codigo": "codigo",
   "codigo*": "codigo",
-  "* código": "codigo",
-  "código*": "codigo",
+  "* codigo": "codigo",
   "código": "codigo",
+  "código*": "codigo",
+  "* código": "codigo",
   sku: "codigo",
   cod: "codigo",
   "id producto": "codigo",
 
   stock: "stock",
-  "* stock": "stock",
   "stock*": "stock",
+  "* stock": "stock",
   "stock inicial": "stock",
   "stock inicial*": "stock",
   "* stock inicial": "stock",
@@ -36,29 +36,25 @@ const FIELD_ALIASES: Record<string, string> = {
   qty: "stock",
 
   "precio_costo": "precio_costo",
-  "* precio_costo": "precio_costo",
-  "precio_costo*": "precio_costo",
-  "* precio costo": "precio_costo",
-  "precio costo*": "precio_costo",
   "precio costo": "precio_costo",
+  "precio costo*": "precio_costo",
+  "* precio costo": "precio_costo",
   costo: "precio_costo",
   cost: "precio_costo",
 
   "precio_venta": "precio_venta",
-  "* precio_venta": "precio_venta",
-  "precio_venta*": "precio_venta",
-  "* precio venta": "precio_venta",
-  "precio venta*": "precio_venta",
   "precio venta": "precio_venta",
+  "precio venta*": "precio_venta",
+  "* precio venta": "precio_venta",
   venta: "precio_venta",
   price: "precio_venta",
 
   categoria: "categoria",
-  "* categoria": "categoria",
   "categoria*": "categoria",
-  "* categoría": "categoria",
-  "categoría*": "categoria",
+  "* categoria": "categoria",
   "categoría": "categoria",
+  "categoría*": "categoria",
+  "* categoría": "categoria",
   category: "categoria",
 
   estado: "estado",
@@ -83,6 +79,8 @@ const FIELD_ALIASES: Record<string, string> = {
   "medida/peso": "medida_peso",
   peso: "medida_peso",
   unidad: "medida_peso",
+  "stock critico": "stock_critico",
+  "stock crítico": "stock_critico",
   "stock bajo": "stock_bajo",
   imagen: "imagen_url",
   "imagen url": "imagen_url",
@@ -108,12 +106,32 @@ function mapHeaders(rawRow: any) {
 }
 
 function sanitizeRow(row: any) {
-  // Campos obligatorios
-  const camposObligatorios = ['nombre', 'codigo', 'precio_costo', 'precio_venta'];
-  const faltantes = camposObligatorios.filter(campo => !row[campo] || String(row[campo]).trim() === '');
+  // Campos obligatorios - validar que existan y no estén vacíos
+  const nombre = row.nombre ? String(row.nombre).trim() : '';
+  const codigo = row.codigo ? String(row.codigo).trim() : '';
   
-  if (faltantes.length > 0) {
-    throw new Error(`Faltan campos obligatorios: ${faltantes.join(', ')}`);
+  // Validar solo campos realmente obligatorios
+  if (!nombre) {
+    throw new Error(`NOMBRE* es obligatorio`);
+  }
+  if (!codigo) {
+    throw new Error(`CÓDIGO* es obligatorio`);
+  }
+  
+  // Campos con valores por defecto si no se proporcionan
+  const categoria = row.categoria ? String(row.categoria).trim() : 'general';
+  const estado = row.estado ? String(row.estado).trim() : 'Disponible';
+  const stock = row.stock != null ? Number(row.stock) : 0;
+  
+  // Convertir precios - son obligatorios
+  const precio_costo = row.precio_costo != null ? Number(row.precio_costo) : null;
+  const precio_venta = row.precio_venta != null ? Number(row.precio_venta) : null;
+  
+  if (precio_costo === null || isNaN(precio_costo)) {
+    throw new Error(`PRECIO COSTO* es obligatorio y debe ser un número`);
+  }
+  if (precio_venta === null || isNaN(precio_venta)) {
+    throw new Error(`PRECIO VENTA* es obligatorio y debe ser un número`);
   }
 
   // Conversión mejorada de fechas de Excel
@@ -134,13 +152,13 @@ function sanitizeRow(row: any) {
   }
 
   return {
-    nombre: String(row.nombre ?? "").trim(),
-    codigo: String(row.codigo ?? "").trim(),
-    stock: Number(row.stock ?? 0) || 0,
-    precio_costo: Number(row.precio_costo ?? 0) || 0,
-    precio_venta: Number(row.precio_venta ?? 0) || 0,
-    categoria: String(row.categoria ?? "general").trim().toLowerCase(),
-    estado: row.estado ? String(row.estado).trim() : "Disponible",
+    nombre: nombre,
+    codigo: codigo,
+    stock: stock,
+    precio_costo: precio_costo,
+    precio_venta: precio_venta,
+    categoria: categoria,
+    estado: estado,
     fecha_vencimiento: fechaVencimiento && !isNaN(fechaVencimiento.getTime()) 
       ? fechaVencimiento.toISOString().split('T')[0] 
       : null,
@@ -148,7 +166,7 @@ function sanitizeRow(row: any) {
     proveedor_nombre: row.proveedor_nombre ? String(row.proveedor_nombre).trim() : null,
     marca: row.marca ? String(row.marca).trim() : null,
     medida_peso: row.medida_peso ? String(row.medida_peso).trim() : null,
-    stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 10 : 10,
+    stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 20 : 20,
     imagen_url: row.imagen_url ? String(row.imagen_url).trim() : null,
   };
 }
@@ -193,7 +211,24 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
       const erroresValidacion: { fila: number; error: string }[] = [];
       const mapped: any[] = [];
       
-      (jsonData as any[]).forEach((row, index) => {
+      // Filtrar filas vacías y las primeras 3 filas de instrucciones
+      const filasValidas = (jsonData as any[]).filter((row, idx) => {
+        // Saltar primeras 3 filas si contienen texto de instrucciones
+        const firstValue = Object.values(row)[0];
+        if (typeof firstValue === 'string' && 
+            (firstValue.includes('INSTRUCCIONES') || 
+             firstValue.includes('Puede dejar') ||
+             firstValue.includes('⚠️'))) {
+          return false;
+        }
+        
+        const mapped = mapHeaders(row);
+        const tieneNombre = mapped.nombre && String(mapped.nombre).trim() !== '';
+        const tieneCodigo = mapped.codigo && String(mapped.codigo).trim() !== '';
+        return tieneNombre || tieneCodigo; // Al menos uno de los dos
+      });
+      
+      filasValidas.forEach((row, index) => {
         try {
           const sanitized = sanitizeRow(mapHeaders(row));
           mapped.push(sanitized);
@@ -289,9 +324,9 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
         <div className="space-y-4">
           {/* Mensaje prominente animado */}
-          <Alert className="bg-blue-50 border-blue-200">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-900">
+          <Alert className="bg-blue-50 border-teal-200">
+            <AlertCircle className="h-4 w-4 text-teal-600" />
+            <AlertDescription className="text-teal-900">
               <strong>¡Importante!</strong> Para mejores resultados, descarga y usa la plantilla oficial de Excel. 
               Incluye todos los campos necesarios con el formato correcto.
             </AlertDescription>
