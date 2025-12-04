@@ -9,22 +9,31 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X, Sparkles } from "lucide-react";
+import { Upload, X, Sparkles, Info, Bot } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 import { Producto } from "@/hooks/useInventario"; 
 import { uploadPublicFile } from "@/services/files";
 import { listCategorias } from "@/services/inventory";
 import { listProveedores } from "@/services/providers";
+import { obtenerCamposPersonalizados, CLASIFICACIONES } from "@/components/ClasificacionesInventario";
+import { analizarProductoPorImagen } from "@/services/ai";
 
 export interface ProductoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (producto: Omit<Producto, "id">) => void;
   producto?: Producto;
+  clasificacionActiva?: string | null;
 }
 
-export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoModalProps) => {
+export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacionActiva }: ProductoModalProps) => {
   const { toast } = useToast();
+
+  const camposPersonalizados = clasificacionActiva
+    ? obtenerCamposPersonalizados(clasificacionActiva)
+    : { requiereFechaVencimiento: false, camposObligatorios: [], camposOpcionales: [] };
 
   const [categorias, setCategorias] = useState<string[]>([]);
   const [proveedores, setProveedores] = useState<{ id: string; nombre: string; activo: boolean }[]>([]);
@@ -35,6 +44,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenPreview, setImagenPreview] = useState<string | null>(null);
   const [imagenUrlInput, setImagenUrlInput] = useState<string>("");
+  const [analizandoIA, setAnalizandoIA] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -46,12 +56,47 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
     estado: "Disponible" as Producto["estado"],
     imagen_url: null as string | null,
 
-    // nuevos campos
+    // campos básicos extendidos
     proveedor_id: null as string | null,
-    fecha_vencimiento: null as string | null, // yyyy-mm-dd
+    fecha_vencimiento: null as string | null,
     marca: null as string | null,
     medida_peso: null as string | null,
     stock_bajo: 10,
+
+    // campos adicionales generales
+    ubicacion_almacen: null as string | null,
+    lote_numero: null as string | null,
+    codigo_barras_adicional: null as string | null,
+    unidad_medida: null as string | null,
+    es_perecedero: false,
+    requiere_refrigeracion: false,
+    temperatura_almacenamiento: null as string | null,
+    dias_vida_util: null as number | null,
+    es_fraccionable: false,
+    peso_unitario: null as number | null,
+    volumen_unitario: null as number | null,
+    alto_cm: null as number | null,
+    ancho_cm: null as number | null,
+    profundo_cm: null as number | null,
+    color: null as string | null,
+    talla: null as string | null,
+    material: null as string | null,
+    garantia_dias: null as number | null,
+    notas_internas: null as string | null,
+
+    // campos específicos por clasificación
+    genero: null as string | null,
+    tipo_mascota: null as string | null,
+    tono_aroma: null as string | null,
+    tipo_piel_cabello: null as string | null,
+    autor: null as string | null,
+    editorial: null as string | null,
+    isbn_ean: null as string | null,
+    formato_libro: null as string | null,
+    numero_paginas: null as number | null,
+    especificacion_electrica: null as string | null,
+    detalles_clave: null as string | null,
+    volumen_peso_neto: null as string | null,
   });
 
   // cargar categorías y proveedores
@@ -96,6 +141,37 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         marca: productoExtendido.marca ?? null,
         medida_peso: productoExtendido.medida_peso ?? null,
         stock_bajo: productoExtendido.stock_bajo ?? 10,
+        ubicacion_almacen: productoExtendido.ubicacion_almacen ?? null,
+        lote_numero: productoExtendido.lote_numero ?? null,
+        codigo_barras_adicional: productoExtendido.codigo_barras_adicional ?? null,
+        unidad_medida: productoExtendido.unidad_medida ?? null,
+        es_perecedero: productoExtendido.es_perecedero ?? false,
+        requiere_refrigeracion: productoExtendido.requiere_refrigeracion ?? false,
+        temperatura_almacenamiento: productoExtendido.temperatura_almacenamiento ?? null,
+        dias_vida_util: productoExtendido.dias_vida_util ?? null,
+        es_fraccionable: productoExtendido.es_fraccionable ?? false,
+        peso_unitario: productoExtendido.peso_unitario ?? null,
+        volumen_unitario: productoExtendido.volumen_unitario ?? null,
+        alto_cm: productoExtendido.alto_cm ?? null,
+        ancho_cm: productoExtendido.ancho_cm ?? null,
+        profundo_cm: productoExtendido.profundo_cm ?? null,
+        color: productoExtendido.color ?? null,
+        talla: productoExtendido.talla ?? null,
+        material: productoExtendido.material ?? null,
+        garantia_dias: productoExtendido.garantia_dias ?? null,
+        notas_internas: productoExtendido.notas_internas ?? null,
+        genero: productoExtendido.genero ?? null,
+        tipo_mascota: productoExtendido.tipo_mascota ?? null,
+        tono_aroma: productoExtendido.tono_aroma ?? null,
+        tipo_piel_cabello: productoExtendido.tipo_piel_cabello ?? null,
+        autor: productoExtendido.autor ?? null,
+        editorial: productoExtendido.editorial ?? null,
+        isbn_ean: productoExtendido.isbn_ean ?? null,
+        formato_libro: productoExtendido.formato_libro ?? null,
+        numero_paginas: productoExtendido.numero_paginas ?? null,
+        especificacion_electrica: productoExtendido.especificacion_electrica ?? null,
+        detalles_clave: productoExtendido.detalles_clave ?? null,
+        volumen_peso_neto: productoExtendido.volumen_peso_neto ?? null,
       });
       setImagenPreview(productoExtendido.imagen_url ?? null);
       setImagenUrlInput(productoExtendido.imagen_url ?? "");
@@ -116,6 +192,37 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
         marca: null,
         medida_peso: null,
         stock_bajo: 10,
+        ubicacion_almacen: null,
+        lote_numero: null,
+        codigo_barras_adicional: null,
+        unidad_medida: null,
+        es_perecedero: false,
+        requiere_refrigeracion: false,
+        temperatura_almacenamiento: null,
+        dias_vida_util: null,
+        es_fraccionable: false,
+        peso_unitario: null,
+        volumen_unitario: null,
+        alto_cm: null,
+        ancho_cm: null,
+        profundo_cm: null,
+        color: null,
+        talla: null,
+        material: null,
+        garantia_dias: null,
+        notas_internas: null,
+        genero: null,
+        tipo_mascota: null,
+        tono_aroma: null,
+        tipo_piel_cabello: null,
+        autor: null,
+        editorial: null,
+        isbn_ean: null,
+        formato_libro: null,
+        numero_paginas: null,
+        especificacion_electrica: null,
+        detalles_clave: null,
+        volumen_peso_neto: null,
       });
       setImagenPreview(null);
       setImagenUrlInput("");
@@ -143,6 +250,46 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
     setFormData((f) => ({ ...f, categoria: categoriaLimpia }));
     setNuevaCategoria("");
     setMostrarNuevaCategoria(false);
+  }
+
+  async function analizarConIA() {
+    const urlImagen = imagenUrlInput || imagenPreview;
+    if (!urlImagen) {
+      toast({
+        title: "No hay imagen",
+        description: "Por favor, sube una imagen o pega una URL primero",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAnalizandoIA(true);
+    try {
+      const sugerencias = await analizarProductoPorImagen(urlImagen, clasificacionActiva || undefined);
+      
+      // Autocompletar campos pero permitir edición
+      setFormData(prev => ({
+        ...prev,
+        nombre: sugerencias.nombre || prev.nombre,
+        marca: sugerencias.marca || prev.marca,
+        categoria: sugerencias.categoria || prev.categoria,
+        precio_venta: sugerencias.precio_venta || prev.precio_venta,
+        volumen_peso_neto: sugerencias.volumen_peso_neto || prev.volumen_peso_neto,
+      }));
+
+      toast({
+        title: "✨ Análisis completado",
+        description: "Los campos han sido autocompletados. Puedes editarlos si es necesario.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error al analizar",
+        description: "No se pudo analizar la imagen. Completa los campos manualmente.",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalizandoIA(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -203,6 +350,41 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
       marca: formData.marca?.trim() || null,
       medida_peso: formData.medida_peso?.trim() || null,
       stock_bajo: Number(formData.stock_bajo) || 10,
+
+      // campos adicionales
+      ubicacion_almacen: formData.ubicacion_almacen?.trim() || null,
+      lote_numero: formData.lote_numero?.trim() || null,
+      codigo_barras_adicional: formData.codigo_barras_adicional?.trim() || null,
+      unidad_medida: formData.unidad_medida?.trim() || null,
+      es_perecedero: formData.es_perecedero || false,
+      requiere_refrigeracion: formData.requiere_refrigeracion || false,
+      temperatura_almacenamiento: formData.temperatura_almacenamiento?.trim() || null,
+      dias_vida_util: formData.dias_vida_util ? Number(formData.dias_vida_util) : null,
+      es_fraccionable: formData.es_fraccionable || false,
+      peso_unitario: formData.peso_unitario ? Number(formData.peso_unitario) : null,
+      volumen_unitario: formData.volumen_unitario ? Number(formData.volumen_unitario) : null,
+      alto_cm: formData.alto_cm ? Number(formData.alto_cm) : null,
+      ancho_cm: formData.ancho_cm ? Number(formData.ancho_cm) : null,
+      profundo_cm: formData.profundo_cm ? Number(formData.profundo_cm) : null,
+      color: formData.color?.trim() || null,
+      talla: formData.talla?.trim() || null,
+      material: formData.material?.trim() || null,
+      garantia_dias: formData.garantia_dias ? Number(formData.garantia_dias) : null,
+      notas_internas: formData.notas_internas?.trim() || null,
+
+      // campos específicos por clasificación
+      genero: formData.genero?.trim() || null,
+      tipo_mascota: formData.tipo_mascota?.trim() || null,
+      tono_aroma: formData.tono_aroma?.trim() || null,
+      tipo_piel_cabello: formData.tipo_piel_cabello?.trim() || null,
+      autor: formData.autor?.trim() || null,
+      editorial: formData.editorial?.trim() || null,
+      isbn_ean: formData.isbn_ean?.trim() || null,
+      formato_libro: formData.formato_libro?.trim() || null,
+      numero_paginas: formData.numero_paginas ? Number(formData.numero_paginas) : null,
+      especificacion_electrica: formData.especificacion_electrica?.trim() || null,
+      detalles_clave: formData.detalles_clave?.trim() || null,
+      volumen_peso_neto: formData.volumen_peso_neto?.trim() || null,
     };
 
     onSave(payload as any);
@@ -213,13 +395,23 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
   <Dialog open={isOpen} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto border-none">
         <DialogHeader className="relative">
-<DialogTitle className="text-xl font-bold bg-clip-text text-teal-600 flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold bg-clip-text text-teal-600 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-teal-600" />
             {producto ? "Editar Producto" : "Agregar Nuevo Producto"}
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
             {producto ? "Actualiza la información de tu producto" : "Completa los datos para agregar un producto al inventario"}
           </p>
+          
+          {/* Indicador de clasificación */}
+          {clasificacionActiva && (
+            <div className="mt-3 flex items-center gap-2">
+              <Badge variant="outline" className={`${CLASIFICACIONES.find(c => c.id === clasificacionActiva)?.color || 'bg-gray-400'} text-white border-none px-3 py-1`}>
+                <Info className="h-3 w-3 mr-1" />
+                Clasificación: {CLASIFICACIONES.find(c => c.id === clasificacionActiva)?.nombre || clasificacionActiva}
+              </Badge>
+            </div>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-2">
@@ -263,8 +455,23 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
           </div>
 
           {/* Imagen - Opción 2: URL externa */}
-          <div className="space-y-2">
-            <Label htmlFor="imagen_url">O pega URL de imagen externa</Label>
+          <div className="space-y-2 bg-white p-4 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="imagen_url" className="text-sm font-medium">O pega URL de imagen externa</Label>
+              {(imagenUrlInput || imagenPreview) && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={analizarConIA}
+                  disabled={analizandoIA}
+                  className="text-xs"
+                >
+                  <Bot className="h-3 w-3 mr-1" />
+                  {analizandoIA ? "Analizando..." : "Analizar con IA"}
+                </Button>
+              )}
+            </div>
             <div className="flex gap-2 items-start">
               <div className="flex-1 space-y-2">
                 <Input
@@ -279,6 +486,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                     }
                   }}
                   placeholder="https://ejemplo.com/imagen.jpg"
+                  className="border-gray-300"
                 />
               </div>
               {imagenUrlInput && (
@@ -309,164 +517,125 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
             </div>
           </div>
 
-          {/* Datos principales */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre</Label>
-              <Input
-                id="nombre"
-                value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="codigo">Código</Label>
-              <Input
-                id="codigo"
-                value={formData.codigo}
-                onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                type="number"
-                min="0"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="precio_costo">P. Costo</Label>
-              <Input
-                id="precio_costo"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.precio_costo}
-                onChange={(e) => setFormData({ ...formData, precio_costo: parseFloat(e.target.value) || 0 })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="precio_venta">P. Venta</Label>
-              <Input
-                id="precio_venta"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.precio_venta}
-                onChange={(e) => setFormData({ ...formData, precio_venta: parseFloat(e.target.value) || 0 })}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Marca / Medida */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="marca">Marca</Label>
-              <Input
-                id="marca"
-                value={formData.marca || ""}
-                onChange={(e) => setFormData({ ...formData, marca: e.target.value || null })}
-                placeholder="Ej: Gloria, Coca-Cola, etc."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="medida_peso">Medida/Peso</Label>
-              <Input
-                id="medida_peso"
-                value={formData.medida_peso || ""}
-                onChange={(e) => setFormData({ ...formData, medida_peso: e.target.value || null })}
-                placeholder="Ej: 500g, 1L, 12 unid"
-              />
-            </div>
-          </div>
-
-          {/* Proveedor / Vencimiento / Estado */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="proveedor">Proveedor</Label>
-              <Select
-                value={formData.proveedor_id ?? ""}
-                onValueChange={(value) => setFormData({ ...formData, proveedor_id: value || null })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar proveedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Sin proveedor</SelectItem>
-                  {proveedores.filter(p => p.activo).map((prov) => (
-                    <SelectItem key={prov.id} value={prov.id}>
-                      {prov.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Sección: Información Básica */}
+          <div className="space-y-4 bg-gradient-to-r from-teal-50 to-emerald-50 p-4 rounded-lg border border-teal-200">
+            <h3 className="text-sm font-semibold text-teal-800 flex items-center gap-2">
+              <div className="h-1 w-1 rounded-full bg-teal-600"></div>
+              Información Básica
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nombre" className="text-sm font-medium">Nombre *</Label>
+                <Input
+                  id="nombre"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  required
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="codigo" className="text-sm font-medium">Código *</Label>
+                <Input
+                  id="codigo"
+                  value={formData.codigo}
+                  onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
+                  required
+                  className="border-gray-300"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="fecha_vencimiento">Fecha de Vencimiento</Label>
-              <Input
-                id="fecha_vencimiento"
-                type="date"
-                value={formData.fecha_vencimiento ?? ""}
-                onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value || null })}
-              />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="stock" className="text-sm font-medium">Stock *</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  min="0"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                  required
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="precio_costo" className="text-sm font-medium">P. Costo *</Label>
+                <Input
+                  id="precio_costo"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.precio_costo}
+                  onChange={(e) => setFormData({ ...formData, precio_costo: parseFloat(e.target.value) || 0 })}
+                  required
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="precio_venta" className="text-sm font-medium">P. Venta *</Label>
+                <Input
+                  id="precio_venta"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.precio_venta}
+                  onChange={(e) => setFormData({ ...formData, precio_venta: parseFloat(e.target.value) || 0 })}
+                  required
+                  className="border-gray-300"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="stock_bajo">Stock Bajo (umbral personalizado)</Label>
-              <Input
-                id="stock_bajo"
-                type="number"
-                min="0"
-                value={formData.stock_bajo}
-                onChange={(e) => setFormData({ ...formData, stock_bajo: parseInt(e.target.value) || 10 })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Sistema general: Rojo ≤7 unidades, Naranja ≤10 unidades
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="estado">Estado</Label>
-              <Select value={formData.estado} onValueChange={(value) => setFormData({ ...formData, estado: value as Producto["estado"] })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Disponible">Disponible</SelectItem>
-                  <SelectItem value="Stock Bajo">Stock Bajo</SelectItem>
-                  <SelectItem value="Vencido">Vencido</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Categoría */}
-          <div className="space-y-2">
-            <Label htmlFor="categoria">Categoría *</Label>
-            {!mostrarNuevaCategoria ? (
-              <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="marca" className="text-sm font-medium">Marca</Label>
+                <Input
+                  id="marca"
+                  value={formData.marca || ""}
+                  onChange={(e) => setFormData({ ...formData, marca: e.target.value || null })}
+                  placeholder="Ej: Gloria, Samsung, Nike"
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="proveedor" className="text-sm font-medium">Proveedor</Label>
                 <Select
-                  value={formData.categoria}
+                  value={formData.proveedor_id ?? ""}
+                  onValueChange={(value) => setFormData({ ...formData, proveedor_id: value || null })}
+                >
+                  <SelectTrigger className="border-gray-300">
+                    <SelectValue placeholder="Seleccionar proveedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sin proveedor</SelectItem>
+                    {proveedores.filter(p => p.activo).map((prov) => (
+                      <SelectItem key={prov.id} value={prov.id}>
+                        {prov.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="categoria" className="text-sm font-medium">Categoría *</Label>
+                <Select
+                  value={mostrarNuevaCategoria ? "__nueva__" : formData.categoria}
                   onValueChange={(value) => {
-                    if (value === "_nueva") setMostrarNuevaCategoria(true);
-                    else setFormData({ ...formData, categoria: value });
+                    if (value === "__nueva__") {
+                      setMostrarNuevaCategoria(true);
+                    } else {
+                      setFormData({ ...formData, categoria: value });
+                      setMostrarNuevaCategoria(false);
+                    }
                   }}
                 >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Seleccionar categoría" />
+                  <SelectTrigger className="border-gray-300">
+                    <SelectValue placeholder="Selecciona categoría" />
                   </SelectTrigger>
                   <SelectContent>
                     {categorias.map((cat) => (
@@ -474,40 +643,217 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
                         {cat.charAt(0).toUpperCase() + cat.slice(1)}
                       </SelectItem>
                     ))}
-                    <SelectItem value="_nueva">+ Nueva Categoría</SelectItem>
+                    <SelectItem value="__nueva__">+ Nueva Categoría</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                {mostrarNuevaCategoria && (
+                  <div className="flex gap-2 items-center mt-2">
+                    <Input
+                      value={nuevaCategoria}
+                      onChange={(e) => setNuevaCategoria(e.target.value)}
+                      placeholder="Nombre de la nueva categoría"
+                      className="border-gray-300"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          agregarNuevaCategoria();
+                        }
+                      }}
+                    />
+                    <Button type="button" onClick={agregarNuevaCategoria} size="sm">
+                      Añadir
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setMostrarNuevaCategoria(false);
+                        setNuevaCategoria("");
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="stock_bajo" className="text-sm font-medium">
+                  Stock Bajo (umbral)
+                </Label>
                 <Input
-                  value={nuevaCategoria}
-                  onChange={(e) => setNuevaCategoria(e.target.value)}
-                  placeholder="Nueva categoría"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      agregarNuevaCategoria();
-                    }
-                  }}
+                  id="stock_bajo"
+                  type="number"
+                  min="0"
+                  value={formData.stock_bajo}
+                  onChange={(e) => setFormData({ ...formData, stock_bajo: parseInt(e.target.value) || 10 })}
+                  className="border-gray-300"
                 />
-                <Button type="button" size="sm" onClick={agregarNuevaCategoria} disabled={!nuevaCategoria.trim()}>
-                  ✓
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setMostrarNuevaCategoria(false);
-                    setNuevaCategoria("");
-                  }}
-                >
-                  ✗
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  El estado se actualiza automáticamente según este umbral
+                </p>
               </div>
-            )}
+            </div>
           </div>
+
+          {/* Sección: Campos Específicos por Clasificación */}
+          {clasificacionActiva && (camposPersonalizados.camposObligatorios.length > 0 || camposPersonalizados.camposOpcionales.length > 0 || camposPersonalizados.requiereFechaVencimiento) && (
+            <div className="space-y-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+              <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-blue-600"></div>
+                Campos Específicos - {CLASIFICACIONES.find(c => c.id === clasificacionActiva)?.nombre}
+              </h3>
+
+              {/* Fecha de Vencimiento si es requerido */}
+              {camposPersonalizados.requiereFechaVencimiento && (
+                <div className="space-y-2">
+                  <Label htmlFor="fecha_vencimiento" className="text-sm font-medium text-red-700">
+                    Fecha de Vencimiento *
+                  </Label>
+                  <Input
+                    id="fecha_vencimiento"
+                    type="date"
+                    value={formData.fecha_vencimiento ?? ""}
+                    onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value || null })}
+                    required
+                    className="border-gray-300"
+                  />
+                </div>
+              )}
+
+              {/* Campos Obligatorios */}
+              {camposPersonalizados.camposObligatorios.map((campo: any) => (
+                <div key={campo.nombre} className="space-y-2">
+                  <Label htmlFor={campo.nombre} className="text-sm font-medium text-red-700">
+                    {campo.nombre === 'volumen_peso_neto' ? 'Volumen/Peso Neto' :
+                     campo.nombre === 'genero' ? 'Género' :
+                     campo.nombre === 'tipo_mascota' ? 'Tipo de Mascota' :
+                     campo.nombre === 'tono_aroma' ? 'Tono o Aroma' :
+                     campo.nombre === 'autor' ? 'Autor' :
+                     campo.nombre === 'editorial' ? 'Editorial' :
+                     campo.nombre === 'talla' ? 'Talla' :
+                     campo.nombre === 'color' ? 'Color' :
+                     campo.nombre === 'garantia_dias' ? 'Garantía (días)' :
+                     campo.nombre} *
+                  </Label>
+                  
+                  {campo.tipo === 'select' && campo.opciones ? (
+                    <Select
+                      value={(formData as any)[campo.nombre] ?? ""}
+                      onValueChange={(value) => setFormData({ ...formData, [campo.nombre]: value || null })}
+                    >
+                      <SelectTrigger className="border-gray-300">
+                        <SelectValue placeholder={`Seleccionar ${campo.nombre}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {campo.opciones.map((opcion: string) => (
+                          <SelectItem key={opcion} value={opcion}>
+                            {opcion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : campo.tipo === 'number' ? (
+                    <Input
+                      id={campo.nombre}
+                      type="number"
+                      min="0"
+                      value={(formData as any)[campo.nombre] || ""}
+                      onChange={(e) => setFormData({ ...formData, [campo.nombre]: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder={campo.placeholder}
+                      required
+                      className="border-gray-300"
+                    />
+                  ) : (
+                    <Input
+                      id={campo.nombre}
+                      type="text"
+                      value={(formData as any)[campo.nombre] || ""}
+                      onChange={(e) => setFormData({ ...formData, [campo.nombre]: e.target.value || null })}
+                      placeholder={campo.placeholder}
+                      required
+                      className="border-gray-300"
+                    />
+                  )}
+                </div>
+              ))}
+
+              {/* Campos Opcionales */}
+              {camposPersonalizados.camposOpcionales.length > 0 && (
+                <div className="space-y-3 pt-2 border-t border-blue-200">
+                  <p className="text-xs font-medium text-blue-700">Campos Opcionales</p>
+                  {camposPersonalizados.camposOpcionales.map((campo: any) => (
+                    <div key={campo.nombre} className="space-y-2">
+                      <Label htmlFor={campo.nombre} className="text-sm font-medium text-gray-700">
+                        {campo.nombre === 'garantia_dias' ? 'Garantía (días)' :
+                         campo.nombre === 'detalles_clave' ? 'Detalles Clave' :
+                         campo.nombre === 'material' ? 'Material' :
+                         campo.nombre === 'alto_cm' ? 'Alto (cm)' :
+                         campo.nombre === 'ancho_cm' ? 'Ancho (cm)' :
+                         campo.nombre === 'profundo_cm' ? 'Profundidad (cm)' :
+                         campo.nombre === 'especificacion_electrica' ? 'Especificación Eléctrica' :
+                         campo.nombre === 'color' ? 'Color' :
+                         campo.nombre === 'tipo_piel_cabello' ? 'Tipo de Piel/Cabello' :
+                         campo.nombre === 'isbn_ean' ? 'ISBN/EAN' :
+                         campo.nombre === 'formato_libro' ? 'Formato' :
+                         campo.nombre === 'numero_paginas' ? 'Número de Páginas' :
+                         campo.nombre}
+                      </Label>
+                      
+                      {campo.tipo === 'select' && campo.opciones ? (
+                        <Select
+                          value={(formData as any)[campo.nombre] ?? ""}
+                          onValueChange={(value) => setFormData({ ...formData, [campo.nombre]: value || null })}
+                        >
+                          <SelectTrigger className="border-gray-300">
+                            <SelectValue placeholder={`Seleccionar ${campo.nombre}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {campo.opciones.map((opcion: string) => (
+                              <SelectItem key={opcion} value={opcion}>
+                                {opcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : campo.tipo === 'textarea' ? (
+                        <Textarea
+                          id={campo.nombre}
+                          value={(formData as any)[campo.nombre] || ""}
+                          onChange={(e) => setFormData({ ...formData, [campo.nombre]: e.target.value || null })}
+                          placeholder={campo.placeholder}
+                          className="border-gray-300"
+                          rows={3}
+                        />
+                      ) : campo.tipo === 'number' ? (
+                        <Input
+                          id={campo.nombre}
+                          type="number"
+                          min="0"
+                          step={campo.nombre.includes('cm') ? '0.01' : '1'}
+                          value={(formData as any)[campo.nombre] || ""}
+                          onChange={(e) => setFormData({ ...formData, [campo.nombre]: e.target.value ? parseFloat(e.target.value) : null })}
+                          placeholder={campo.placeholder}
+                          className="border-gray-300"
+                        />
+                      ) : (
+                        <Input
+                          id={campo.nombre}
+                          type="text"
+                          value={(formData as any)[campo.nombre] || ""}
+                          onChange={(e) => setFormData({ ...formData, [campo.nombre]: e.target.value || null })}
+                          placeholder={campo.placeholder}
+                          className="border-gray-300"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          
 
           <DialogFooter className="gap-2 mt-6">
             <Button type="button" variant="outline" onClick={onClose} className="min-w-[120px]">
@@ -522,6 +868,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto }: ProductoMod
           </DialogFooter>
         </form>
       </DialogContent>
+  
     </Dialog>
   );
 };

@@ -22,6 +22,42 @@ export interface Producto {
   marca?: string | null;
   medida_peso?: string | null;
   stock_bajo?: number;
+  
+  // campos adicionales
+  ubicacion_almacen?: string | null;
+  lote_numero?: string | null;
+  codigo_barras_adicional?: string | null;
+  unidad_medida?: string | null;
+  es_perecedero?: boolean;
+  requiere_refrigeracion?: boolean;
+  temperatura_almacenamiento?: string | null;
+  dias_vida_util?: number | null;
+  es_fraccionable?: boolean;
+  peso_unitario?: number | null;
+  volumen_unitario?: number | null;
+  alto_cm?: number | null;
+  ancho_cm?: number | null;
+  profundo_cm?: number | null;
+  color?: string | null;
+  talla?: string | null;
+  material?: string | null;
+  garantia_dias?: number | null;
+  notas_internas?: string | null;
+  
+  // nuevos campos por clasificación
+  genero?: string | null;
+  tipo_mascota?: string | null;
+  tono_aroma?: string | null;
+  tipo_piel_cabello?: string | null;
+  autor?: string | null;
+  editorial?: string | null;
+  isbn_ean?: string | null;
+  formato_libro?: string | null;
+  numero_paginas?: number | null;
+  especificacion_electrica?: string | null;
+  detalles_clave?: string | null;
+  volumen_peso_neto?: string | null;
+  
   created_at?: string;
   updated_at?: string;
 }
@@ -41,6 +77,41 @@ export interface CrearProductoDTO {
   marca?: string | null;
   medida_peso?: string | null;
   stock_bajo?: number;
+  
+  // campos adicionales
+  ubicacion_almacen?: string | null;
+  lote_numero?: string | null;
+  codigo_barras_adicional?: string | null;
+  unidad_medida?: string | null;
+  es_perecedero?: boolean;
+  requiere_refrigeracion?: boolean;
+  temperatura_almacenamiento?: string | null;
+  dias_vida_util?: number | null;
+  es_fraccionable?: boolean;
+  peso_unitario?: number | null;
+  volumen_unitario?: number | null;
+  alto_cm?: number | null;
+  ancho_cm?: number | null;
+  profundo_cm?: number | null;
+  color?: string | null;
+  talla?: string | null;
+  material?: string | null;
+  garantia_dias?: number | null;
+  notas_internas?: string | null;
+  
+  // nuevos campos por clasificación
+  genero?: string | null;
+  tipo_mascota?: string | null;
+  tono_aroma?: string | null;
+  tipo_piel_cabello?: string | null;
+  autor?: string | null;
+  editorial?: string | null;
+  isbn_ean?: string | null;
+  formato_libro?: string | null;
+  numero_paginas?: number | null;
+  especificacion_electrica?: string | null;
+  detalles_clave?: string | null;
+  volumen_peso_neto?: string | null;
 }
 
 export interface ActualizarProductoDTO extends Partial<CrearProductoDTO> {}

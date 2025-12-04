@@ -211,21 +211,30 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
       const erroresValidacion: { fila: number; error: string }[] = [];
       const mapped: any[] = [];
       
-      // Filtrar filas vacías y las primeras 3 filas de instrucciones
+      // Filtrar filas vacías y las primeras filas de instrucciones
       const filasValidas = (jsonData as any[]).filter((row, idx) => {
-        // Saltar primeras 3 filas si contienen texto de instrucciones
-        const firstValue = Object.values(row)[0];
-        if (typeof firstValue === 'string' && 
-            (firstValue.includes('INSTRUCCIONES') || 
-             firstValue.includes('Puede dejar') ||
-             firstValue.includes('⚠️'))) {
-          return false;
+        // Saltar filas que son claramente de instrucciones o vacías
+        const values = Object.values(row);
+        const firstValue = values[0];
+        
+        // Saltar si es texto de instrucciones
+        if (typeof firstValue === 'string') {
+          const lower = firstValue.toLowerCase();
+          if (lower.includes('instrucciones') || 
+              lower.includes('obligatorio') ||
+              lower.includes('⚠️') ||
+              lower.includes('campo')) {
+            return false;
+          }
         }
         
+        // Mapear y verificar campos obligatorios
         const mapped = mapHeaders(row);
         const tieneNombre = mapped.nombre && String(mapped.nombre).trim() !== '';
         const tieneCodigo = mapped.codigo && String(mapped.codigo).trim() !== '';
-        return tieneNombre || tieneCodigo; // Al menos uno de los dos
+        
+        // Debe tener al menos nombre Y código
+        return tieneNombre && tieneCodigo;
       });
       
       filasValidas.forEach((row, index) => {

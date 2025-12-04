@@ -37,6 +37,7 @@ import {
 } from "../components/ui/dialog";
 import { useInventario, Producto } from "../hooks/useInventario";
 import ControlMermas from "./ControlMermas";
+import { ClasificacionesInventario, CLASIFICACIONES, obtenerClasificacionPorCategoria, obtenerCamposPersonalizados } from "../components/ClasificacionesInventario";
 
 const Inventario = () => {
   const { productos, loading, agregarProducto, actualizarProducto, eliminarProducto } = useInventario();
@@ -55,6 +56,7 @@ const Inventario = () => {
   const [detalleModalOpen, setDetalleModalOpen] = useState(false);
   const [productoDetalle, setProductoDetalle] = useState<Producto | null>(null);
   const [mermasViewOpen, setMermasViewOpen] = useState(false);
+  const [clasificacionActiva, setClasificacionActiva] = useState<string>("");
   const itemsPorPagina = 10;
 
   const categorias = useMemo(() => {
@@ -62,12 +64,30 @@ const Inventario = () => {
   }, [productos]);
 
   const productosFiltradosYOrdenados = useMemo(() => {
-    let resultado = productos.filter(p =>
-      (p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       p.codigo.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (filtroCategoria === "todas" || p.categoria === filtroCategoria) &&
-      (filtroEstado === "todos" || p.estado === filtroEstado)
-    );
+    let resultado = productos.filter(p => {
+      // Filtro por búsqueda
+      const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         p.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filtro por categoría
+      const matchCategoria = filtroCategoria === "todas" || p.categoria === filtroCategoria;
+      
+      // Filtro por estado
+      const matchEstado = filtroEstado === "todos" || p.estado === filtroEstado;
+      
+      // Filtro por clasificación activa
+      let matchClasificacion = true;
+      if (clasificacionActiva) {
+        const clasificacion = CLASIFICACIONES.find(c => c.id === clasificacionActiva);
+        if (clasificacion) {
+          matchClasificacion = clasificacion.categorias.some(cat => 
+            p.categoria.toLowerCase().includes(cat) || cat.includes(p.categoria.toLowerCase())
+          );
+        }
+      }
+      
+      return matchSearch && matchCategoria && matchEstado && matchClasificacion;
+    });
 
     // Ordenamiento
     const [campo, direccion] = ordenamiento.split('-');
@@ -172,8 +192,15 @@ const Inventario = () => {
           <h1 className="text-3xl font-bold">Inventario</h1>
           <p className="text-muted-foreground mt-1">Gestiona tus productos y stock</p>
           <p className="text-muted-foreground mt-1">Puedes agregar tus productos manualmente o mediante carga masiva.</p>
-
         </div>
+
+        {/* Clasificaciones */}
+        <Card className="p-4 shadow-card">
+          <ClasificacionesInventario
+            clasificacionActiva={clasificacionActiva}
+            onSeleccionar={setClasificacionActiva}
+          />
+        </Card>
 
         {/* Toolbar */}
         <Card className="p-4 shadow-card">
@@ -292,7 +319,18 @@ const Inventario = () => {
                   <TableHead>P. Venta</TableHead>
                   <TableHead>Categoría</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Vencimiento</TableHead>
+                  
+                  {/* Columna dinámica según clasificación */}
+                  {clasificacionActiva && CLASIFICACIONES.find(c => c.id === clasificacionActiva) ? (
+                    obtenerCamposPersonalizados(clasificacionActiva).requiereFechaVencimiento ? (
+                      <TableHead>Vencimiento</TableHead>
+                    ) : (
+                      <TableHead>Detalles</TableHead>
+                    )
+                  ) : (
+                    <TableHead>Vencimiento</TableHead>
+                  )}
+                  
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -351,21 +389,85 @@ const Inventario = () => {
                           <Badge variant="outline">{producto.categoria}</Badge>
                         </TableCell>
                         <TableCell>{getEstadoBadge(producto.estado, producto.stock)}</TableCell>
+                        
+                        {/* Columna dinámica de detalles según clasificación */}
                         <TableCell>
-                          {diasVencimiento !== null && (
-                            <div className="flex items-center gap-1">
-                              {diasVencimiento <= 0 ? (
-                                <Badge variant="destructive" className="text-xs">Vencido</Badge>
-                              ) : diasVencimiento <= 7 ? (
-                                <Badge className="bg-orange-500 text-white text-xs">⚠ faltan {diasVencimiento} días</Badge>
-                              ) : diasVencimiento <= 30 ? (
-                                <Badge className="bg-yellow-500 text-black text-xs">faltan {diasVencimiento} días</Badge>
-                              ) : (
-                                <span className="text-xs text-muted-foreground"> faltan {diasVencimiento}  días</span>
-                              )}
-                            </div>
-                          )}
+                          {(() => {
+                            // Si hay clasificación activa, mostrar campos específicos
+                            if (clasificacionActiva) {
+                              const config = obtenerCamposPersonalizados(clasificacionActiva);
+                              
+                              if (config.requiereFechaVencimiento) {
+                                // Mostrar vencimiento para productos perecederos
+                                if (diasVencimiento !== null) {
+                                  if (diasVencimiento <= 0) {
+                                    return <Badge variant="destructive" className="text-xs">Vencido</Badge>;
+                                  } else if (diasVencimiento <= 7) {
+                                    return <Badge className="bg-orange-500 text-white text-xs">⚠ {diasVencimiento}d</Badge>;
+                                  } else if (diasVencimiento <= 30) {
+                                    return <Badge className="bg-yellow-500 text-black text-xs">{diasVencimiento}d</Badge>;
+                                  } else {
+                                    return <span className="text-xs text-muted-foreground">{diasVencimiento}d</span>;
+                                  }
+                                }
+                                return <span className="text-xs text-muted-foreground">-</span>;
+                              } else {
+                                // Mostrar campos relevantes para productos no perecederos
+                                const productoExt = producto as any;
+                                
+                                if (clasificacionActiva === 'ropa' || clasificacionActiva === 'calzado') {
+                                  return (
+                                    <div className="text-xs space-y-0.5">
+                                      {productoExt.talla && <div>Talla: {productoExt.talla}</div>}
+                                      {productoExt.color && <div className="text-muted-foreground">{productoExt.color}</div>}
+                                    </div>
+                                  );
+                                } else if (clasificacionActiva === 'tecnologia') {
+                                  return (
+                                    <div className="text-xs text-muted-foreground">
+                                      {productoExt.garantia_dias ? `Garantía: ${productoExt.garantia_dias}d` : '-'}
+                                    </div>
+                                  );
+                                } else if (clasificacionActiva === 'libreria') {
+                                  return (
+                                    <div className="text-xs space-y-0.5">
+                                      {productoExt.autor && <div className="font-medium">{productoExt.autor}</div>}
+                                      {productoExt.editorial && <div className="text-muted-foreground">{productoExt.editorial}</div>}
+                                    </div>
+                                  );
+                                } else if (clasificacionActiva === 'herramientas') {
+                                  return (
+                                    <div className="text-xs text-muted-foreground">
+                                      {productoExt.material || '-'}
+                                    </div>
+                                  );
+                                } else if (clasificacionActiva === 'hogar') {
+                                  return (
+                                    <div className="text-xs text-muted-foreground">
+                                      {productoExt.material || '-'}
+                                    </div>
+                                  );
+                                }
+                                return <span className="text-xs text-muted-foreground">-</span>;
+                              }
+                            } else {
+                              // Vista general: mostrar vencimiento si existe
+                              if (diasVencimiento !== null) {
+                                if (diasVencimiento <= 0) {
+                                  return <Badge variant="destructive" className="text-xs">Vencido</Badge>;
+                                } else if (diasVencimiento <= 7) {
+                                  return <Badge className="bg-orange-500 text-white text-xs">⚠ {diasVencimiento}d</Badge>;
+                                } else if (diasVencimiento <= 30) {
+                                  return <Badge className="bg-yellow-500 text-black text-xs">{diasVencimiento}d</Badge>;
+                                } else {
+                                  return <span className="text-xs text-muted-foreground">{diasVencimiento}d</span>;
+                                }
+                              }
+                              return <span className="text-xs text-muted-foreground">-</span>;
+                            }
+                          })()}
                         </TableCell>
+                        
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -472,6 +574,7 @@ const Inventario = () => {
         }}
         onSave={handleSave}
         producto={editingProducto}
+        clasificacionActiva={clasificacionActiva}
       />
 
       <CargaMasivaModal

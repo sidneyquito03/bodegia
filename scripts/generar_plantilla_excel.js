@@ -23,26 +23,26 @@ const headers = [
   'STOCK BAJO'
 ];
 
-const instruccion1 = '⚠️ INSTRUCCIONES PARA LA CARGA MASIVA';
-const instruccion2 = 'CAMPOS OBLIGATORIOS (con *): NOMBRE, CÓDIGO, PRECIO COSTO y PRECIO VENTA. Los demás campos son opcionales.';
-const instruccion3 = 'Si no llenas CATEGORÍA se usará "general", STOCK INICIAL será 0, ESTADO será "Disponible" y STOCK BAJO será 20.';
+const instruccion1 = '⚠️ PLANTILLA DE CARGA MASIVA - BODEGIA';
+const instruccion2 = 'Solo son OBLIGATORIOS (*): NOMBRE, CÓDIGO, PRECIO COSTO y PRECIO VENTA. Los demás campos son OPCIONALES.';
+const instruccion3 = 'Si no llenas: CATEGORÍA=general, STOCK=0, ESTADO=Disponible, STOCK BAJO=20';
 
-// Fila de ejemplo con datos de la imagen
+// Fila de ejemplo - Solo con campos obligatorios llenos
 const ejemploData = [
-  'Aceite Vegetal 1L',  // NOMBRE*
-  'ACEI-001',           // CÓDIGO*
-  5,                    // PRECIO COSTO*
-  6.5,                  // PRECIO VENTA*
-  'comestibles',        // CATEGORÍA
-  30,                   // STOCK INICIAL
-  'Disponible',         // ESTADO
-  '10/12/2026',         // FECHA VENCIMIENTO
-  'Primor',             // MARCA
-  '1 Litro',            // MEDIDA/PESO
-  'Distribuidora La Estrella', // PROVEEDOR NOMBRE
-  '20123456789',        // PROVEEDOR ID/RUC
-  'http://imagen.com/aceite.jpg', // URL IMAGEN
-  10                    // STOCK BAJO
+  'Aceite Vegetal 1L',  // NOMBRE* (OBLIGATORIO)
+  'ACEI-001',           // CÓDIGO* (OBLIGATORIO)
+  5.00,                 // PRECIO COSTO* (OBLIGATORIO)
+  6.50,                 // PRECIO VENTA* (OBLIGATORIO)
+  'abarrotes',          // CATEGORÍA (opcional)
+  30,                   // STOCK INICIAL (opcional, default 0)
+  'Disponible',         // ESTADO (opcional, default Disponible)
+  '2026-12-10',         // FECHA VENCIMIENTO (opcional, formato YYYY-MM-DD)
+  'Primor',             // MARCA (opcional)
+  '1 Litro',            // MEDIDA/PESO (opcional)
+  'Distribuidora La Estrella', // PROVEEDOR NOMBRE (opcional)
+  '20123456789',        // PROVEEDOR RUC (opcional)
+  '',                   // URL IMAGEN (opcional)
+  15                    // STOCK BAJO (opcional, default 20)
 ];
 
 // Crear worksheet vacío

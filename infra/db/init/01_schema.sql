@@ -56,6 +56,20 @@ create table if not exists productos(
   visible_catalogo boolean default true,     -- Si aparece en catálogo/vitrina
   permite_devolucion boolean default true,   -- Si acepta devoluciones
   
+  -- Campos específicos por clasificación
+  genero text,                               -- Ropa/Calzado: Hombre, Mujer, Unisex, Niño, Niña
+  tipo_mascota text,                         -- Mascotas: Perro, Gato, Ave, Roedor, Pez, Reptil, Otro
+  tono_aroma text,                           -- Belleza/Aseo: Lavanda, Neutro, Rosa, etc.
+  tipo_piel_cabello text,                    -- Belleza/Aseo: Piel grasa, Cabello seco, etc.
+  autor text,                                -- Librería: Nombre del autor
+  editorial text,                            -- Librería: Nombre de la editorial
+  isbn_ean text,                             -- Librería: ISBN o EAN
+  formato_libro text,                        -- Librería: Tapa Dura, Tapa Blanda, Digital, Espiral
+  numero_paginas int,                        -- Librería: Número de páginas
+  especificacion_electrica text,             -- Herramientas: 220V 1500W, etc.
+  detalles_clave text,                       -- Tecnología: Características principales
+  volumen_peso_neto text,                    -- Limpieza/Abarrotes/Mascotas/Belleza: 500ml, 1kg, etc.
+  
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

@@ -29,3 +29,20 @@ export async function generateStrategicRecommendations(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export interface ProductoSugerido {
+  nombre?: string;
+  marca?: string;
+  categoria?: string;
+  precio_venta?: number;
+  descripcion?: string;
+  volumen_peso_neto?: string;
+  clasificacion_sugerida?: string;
+}
+
+export async function analizarProductoPorImagen(imagenUrl: string, clasificacion?: string) {
+  return api<ProductoSugerido>("/ai/analyze-product", {
+    method: "POST",
+    body: JSON.stringify({ imagenUrl, clasificacion }),
+  });
+}
