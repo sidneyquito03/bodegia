@@ -11,21 +11,21 @@ services:
     ports: 
       - "5432:5432"
     volumes:
-    - pgdata:/var/lib/postgresql/data
-    - ../db/init:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+      - ../db/init:/docker-entrypoint-initdb.d:ro
 
   api:
     build:
-      context: ../../services/api
+      context: ../../services/api      # <--- CORRECTO: Apunta a donde creamos el Dockerfile
     env_file:
-      - ../../services/api/.env
+      - ../../services/api/.env        # <--- CORRECTO: Apunta al .env de la API
     depends_on: 
       - db 
-    ports: ["3000:3000"]
+    ports: ["3000:3001"]
 
   web:
     build:
-      context: ../../apps/web
+      context: ../../apps/web          # <--- CORRECTO: Apunta a donde creamos el Dockerfile Web
     env_file:
       - ../../apps/web/.env
     depends_on: 
