@@ -34,26 +34,68 @@ router.post("/analyze-product", async (req: Request, res: Response) => {
       clasificacion?: string;
     };
 
-    const prompt = clasificacion 
-      ? `Analiza esta imagen de un producto de la clasificación "${clasificacion}". 
-         Extrae la siguiente información en formato JSON:
-         - nombre: nombre del producto
-         - marca: marca si es visible
-         - categoria: categoría específica
-         - precio_venta: precio estimado en soles (opcional)
-         - volumen_peso_neto: volumen o peso neto si es visible (ej: "500ml", "1kg")
-         - descripcion: breve descripción
-         
-         Responde SOLO con el objeto JSON, sin texto adicional.`
-      : `Analiza esta imagen de un producto y extrae la siguiente información en formato JSON:
-         - nombre: nombre del producto
-         - marca: marca si es visible
-         - categoria: categoría del producto
-         - precio_venta: precio estimado en soles (opcional)
-         - volumen_peso_neto: volumen o peso neto si es visible
-         - clasificacion_sugerida: clasificación sugerida (ropa, tecnologia, abarrotes, etc.)
-         
-         Responde SOLO con el objeto JSON, sin texto adicional.`;
+    let prompt = `Analiza esta imagen de producto y extrae la siguiente información en formato JSON:
+- nombre: nombre del producto
+- marca: marca si es visible
+- categoria: categoría específica
+- precio_venta: precio estimado en soles (número, opcional)
+- descripcion: breve descripción
+`;
+
+    // Agregar campos específicos según clasificación
+    if (clasificacion === "ropa" || clasificacion === "calzado") {
+      prompt += `\nEste es un producto de ${clasificacion}. Extrae TAMBIÉN:
+- talla: talla del producto (S, M, L, XL, 38, 40, etc.)
+- color: color principal
+- genero: género (Hombre, Mujer, Unisex, Niño, Niña)
+- tipo_tela: tipo de tela o material (Algodón, Poliéster, Jean, Cuero, etc.)
+`;
+    } else if (clasificacion === "abarrotes" || clasificacion === "limpieza" || clasificacion === "licores") {
+      prompt += `\nEste es un producto de ${clasificacion}. Extrae TAMBIÉN:
+- volumen_peso_neto: volumen o peso neto visible (ej: "500ml", "1L", "250g", "1kg")
+- fecha_vencimiento: fecha de vencimiento si es visible (formato YYYY-MM-DD)
+`;
+    } else if (clasificacion === "tecnologia") {
+      prompt += `\nEste es un producto de tecnología. Extrae TAMBIÉN:
+- garantia_dias: días de garantía si es visible (número)
+- detalles_clave: características principales del producto
+- especificacion_electrica: especificaciones eléctricas si son visibles
+`;
+    } else if (clasificacion === "mascotas") {
+      prompt += `\nEste es un producto de mascotas. Extrae TAMBIÉN:
+- volumen_peso_neto: peso o volumen (ej: "500g", "2kg", "1L")
+- tipo_mascota: tipo de mascota (Perro, Gato, Ave, Roedor, Pez, etc.)
+`;
+    } else if (clasificacion === "belleza" || clasificacion === "aseo_personal") {
+      prompt += `\nEste es un producto de ${clasificacion}. Extrae TAMBIÉN:
+- volumen_peso_neto: volumen o peso (ej: "100ml", "250g")
+- tono_aroma: tono, aroma o fragancia (ej: "Lavanda", "Neutro", "Rosa")
+- tipo_piel_cabello: tipo de piel o cabello recomendado
+- color: color del producto (para maquillaje)
+`;
+    } else if (clasificacion === "libreria") {
+      prompt += `\nEste es un producto de librería. Extrae TAMBIÉN:
+- autor: nombre del autor (si es un libro)
+- editorial: editorial (si es un libro)
+- isbn_ean: código ISBN o EAN si es visible
+- numero_paginas: número de páginas (si es visible)
+`;
+    } else if (clasificacion === "hogar") {
+      prompt += `\nEste es un producto de hogar. Extrae TAMBIÉN:
+- material: material principal (Madera, Plástico, Metal, Cerámica, etc.)
+- alto_cm: altura en cm si es visible
+- ancho_cm: ancho en cm si es visible
+- profundo_cm: profundidad en cm si es visible
+`;
+    } else if (clasificacion === "herramientas") {
+      prompt += `\nEste es una herramienta. Extrae TAMBIÉN:
+- material: material principal
+- especificacion_electrica: especificaciones eléctricas si es visible (ej: "220V 1500W")
+- garantia_dias: días de garantía
+`;
+    }
+
+    prompt += `\n\nResponde ÚNICAMENTE con un objeto JSON válido, sin texto adicional antes o después.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",

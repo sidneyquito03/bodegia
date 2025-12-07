@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -56,12 +56,39 @@ const Inventario = () => {
   const [detalleModalOpen, setDetalleModalOpen] = useState(false);
   const [productoDetalle, setProductoDetalle] = useState<Producto | null>(null);
   const [mermasViewOpen, setMermasViewOpen] = useState(false);
-  const [clasificacionActiva, setClasificacionActiva] = useState<string>("");
+  const [clasificacionActiva, setClasificacionActiva] = useState<string>("abarrotes");
   const itemsPorPagina = 10;
 
+  // Categorías filtradas por clasificación activa
   const categorias = useMemo(() => {
-    return Array.from(new Set(productos.map(p => p.categoria)));
-  }, [productos]);
+    if (!clasificacionActiva) {
+      return Array.from(new Set(productos.map(p => p.categoria)));
+    }
+    
+    const clasificacion = CLASIFICACIONES.find(c => c.id === clasificacionActiva);
+    if (!clasificacion) {
+      return Array.from(new Set(productos.map(p => p.categoria)));
+    }
+    
+    // Filtrar productos que pertenecen a la clasificación activa
+    const productosDeClasificacion = productos.filter(p => {
+      const categoriaProducto = p.categoria.toLowerCase().trim();
+      return clasificacion.categorias.some(cat => 
+        categoriaProducto === cat.toLowerCase() || 
+        categoriaProducto.includes(cat.toLowerCase()) || 
+        cat.toLowerCase().includes(categoriaProducto)
+      );
+    });
+    
+    // Retornar solo las categorías únicas de esos productos
+    return Array.from(new Set(productosDeClasificacion.map(p => p.categoria)));
+  }, [productos, clasificacionActiva]);
+
+  // Resetear filtro de categoría cuando cambie la clasificación
+  useEffect(() => {
+    setFiltroCategoria("todas");
+    setCurrentPage(1);
+  }, [clasificacionActiva]);
 
   const productosFiltradosYOrdenados = useMemo(() => {
     let resultado = productos.filter(p => {
@@ -80,8 +107,12 @@ const Inventario = () => {
       if (clasificacionActiva) {
         const clasificacion = CLASIFICACIONES.find(c => c.id === clasificacionActiva);
         if (clasificacion) {
+          // Verificar si la categoría del producto coincide con alguna categoría de la clasificación
+          const categoriaProducto = p.categoria.toLowerCase().trim();
           matchClasificacion = clasificacion.categorias.some(cat => 
-            p.categoria.toLowerCase().includes(cat) || cat.includes(p.categoria.toLowerCase())
+            categoriaProducto === cat.toLowerCase() || 
+            categoriaProducto.includes(cat.toLowerCase()) || 
+            cat.toLowerCase().includes(categoriaProducto)
           );
         }
       }
@@ -321,14 +352,28 @@ const Inventario = () => {
                   <TableHead>Estado</TableHead>
                   
                   {/* Columna dinámica según clasificación */}
-                  {clasificacionActiva && CLASIFICACIONES.find(c => c.id === clasificacionActiva) ? (
-                    obtenerCamposPersonalizados(clasificacionActiva).requiereFechaVencimiento ? (
-                      <TableHead>Vencimiento</TableHead>
-                    ) : (
-                      <TableHead>Detalles</TableHead>
-                    )
+                  {clasificacionActiva ? (
+                    (() => {
+                      const config = obtenerCamposPersonalizados(clasificacionActiva);
+                      
+                      if (config.requiereFechaVencimiento) {
+                        return <TableHead>Vencimiento</TableHead>;
+                      } else if (clasificacionActiva === 'ropa' || clasificacionActiva === 'calzado') {
+                        return <TableHead>Talla/Color</TableHead>;
+                      } else if (clasificacionActiva === 'tecnologia') {
+                        return <TableHead>Garantía</TableHead>;
+                      } else if (clasificacionActiva === 'libreria') {
+                        return <TableHead>Autor/Editorial</TableHead>;
+                      } else if (clasificacionActiva === 'hogar' || clasificacionActiva === 'herramientas') {
+                        return <TableHead>Material</TableHead>;
+                      } else if (clasificacionActiva === 'belleza' || clasificacionActiva === 'aseo_personal') {
+                        return <TableHead>Tono/Aroma</TableHead>;
+                      } else {
+                        return <TableHead>Detalles</TableHead>;
+                      }
+                    })()
                   ) : (
-                    <TableHead>Vencimiento</TableHead>
+                    <TableHead>Info Adicional</TableHead>
                   )}
                   
                   <TableHead className="text-right">Acciones</TableHead>
@@ -418,14 +463,14 @@ const Inventario = () => {
                                 if (clasificacionActiva === 'ropa' || clasificacionActiva === 'calzado') {
                                   return (
                                     <div className="text-xs space-y-0.5">
-                                      {productoExt.talla && <div>Talla: {productoExt.talla}</div>}
+                                      {productoExt.talla && <div><span className="font-semibold">Talla:</span> {productoExt.talla}</div>}
                                       {productoExt.color && <div className="text-muted-foreground">{productoExt.color}</div>}
                                     </div>
                                   );
                                 } else if (clasificacionActiva === 'tecnologia') {
                                   return (
                                     <div className="text-xs text-muted-foreground">
-                                      {productoExt.garantia_dias ? `Garantía: ${productoExt.garantia_dias}d` : '-'}
+                                      {productoExt.garantia_dias ? `${productoExt.garantia_dias} días` : '-'}
                                     </div>
                                   );
                                 } else if (clasificacionActiva === 'libreria') {
@@ -435,16 +480,22 @@ const Inventario = () => {
                                       {productoExt.editorial && <div className="text-muted-foreground">{productoExt.editorial}</div>}
                                     </div>
                                   );
-                                } else if (clasificacionActiva === 'herramientas') {
+                                } else if (clasificacionActiva === 'herramientas' || clasificacionActiva === 'hogar') {
                                   return (
                                     <div className="text-xs text-muted-foreground">
                                       {productoExt.material || '-'}
                                     </div>
                                   );
-                                } else if (clasificacionActiva === 'hogar') {
+                                } else if (clasificacionActiva === 'belleza' || clasificacionActiva === 'aseo_personal') {
                                   return (
                                     <div className="text-xs text-muted-foreground">
-                                      {productoExt.material || '-'}
+                                      {productoExt.tono_aroma || '-'}
+                                    </div>
+                                  );
+                                } else if (clasificacionActiva === 'mascotas') {
+                                  return (
+                                    <div className="text-xs text-muted-foreground">
+                                      {productoExt.tipo_mascota || '-'}
                                     </div>
                                   );
                                 }

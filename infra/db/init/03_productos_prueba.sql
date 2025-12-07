@@ -1,18 +1,18 @@
 -- Productos de prueba por clasificación para validar el sistema
 
 -- ROPA
-INSERT INTO productos (nombre, codigo, stock, precio_costo, precio_venta, categoria, marca, talla, color, genero, stock_bajo, imagen_url)
+INSERT INTO productos (nombre, codigo, stock, precio_costo, precio_venta, categoria, marca, talla, color, genero, tipo_tela, stock_bajo, imagen_url)
 VALUES 
-('Polo Básico Cuello Redondo', 'ROPA-001', 25, 15.00, 25.00, 'ropa', 'TopStyle', 'M', 'Azul', 'Unisex', 10, 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400'),
-('Pantalón Jean Clásico', 'ROPA-002', 18, 45.00, 75.00, 'ropa', 'Denim Co', '32', 'Negro', 'Hombre', 8, 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400'),
-('Blusa Floral Manga Corta', 'ROPA-003', 12, 25.00, 42.00, 'ropa', 'FemStyle', 'S', 'Rosa', 'Mujer', 6, 'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=400');
+('Polo Básico Cuello Redondo', 'ROPA-001', 25, 15.00, 25.00, 'ropa', 'TopStyle', 'M', 'Azul', 'Unisex', 'Algodón', 10, 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400'),
+('Pantalón Jean Clásico', 'ROPA-002', 18, 45.00, 75.00, 'ropa', 'Denim Co', '32', 'Negro', 'Hombre', 'Jean', 8, 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400'),
+('Blusa Floral Manga Corta', 'ROPA-003', 12, 25.00, 42.00, 'ropa', 'FemStyle', 'S', 'Rosa', 'Mujer', 'Poliéster', 6, 'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=400');
 
 -- CALZADO
-INSERT INTO productos (nombre, codigo, stock, precio_costo, precio_venta, categoria, marca, talla, color, genero, garantia_dias, stock_bajo)
+INSERT INTO productos (nombre, codigo, stock, precio_costo, precio_venta, categoria, marca, talla, color, genero, tipo_tela, garantia_dias, stock_bajo)
 VALUES 
-('Zapatillas Deportivas Running', 'CALZ-001', 15, 80.00, 135.00, 'calzado', 'RunFast', '42', 'Negro/Blanco', 'Unisex', 90, 8),
-('Sandalias Verano Mujer', 'CALZ-002', 22, 30.00, 50.00, 'calzado', 'BeachWalk', '38', 'Beige', 'Mujer', 30, 10),
-('Botas de Seguridad', 'CALZ-003', 10, 95.00, 160.00, 'calzado', 'SafeStep', '43', 'Marrón', 'Hombre', 180, 5);
+('Zapatillas Deportivas Running', 'CALZ-001', 15, 80.00, 135.00, 'calzado', 'RunFast', '42', 'Negro/Blanco', 'Unisex', 'Sintético', 90, 8),
+('Sandalias Verano Mujer', 'CALZ-002', 22, 30.00, 50.00, 'calzado', 'BeachWalk', '38', 'Beige', 'Mujer', 'Cuero', 30, 10),
+('Botas de Seguridad', 'CALZ-003', 10, 95.00, 160.00, 'calzado', 'SafeStep', '43', 'Marrón', 'Hombre', 'Cuero', 180, 5);
 
 -- LIMPIEZA
 INSERT INTO productos (nombre, codigo, stock, precio_costo, precio_venta, categoria, marca, volumen_peso_neto, fecha_vencimiento, stock_bajo)

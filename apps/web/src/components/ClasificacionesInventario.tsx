@@ -36,77 +36,77 @@ export const CLASIFICACIONES: Clasificacion[] = [
     nombre: "Calzado",
     Icon: ShoppingBag,
     color: "bg-blue-400 hover:bg-blue-500",
-    categorias: ["calzado", "zapatos", "zapatillas"]
+    categorias: ["calzado", "zapatos"]
   },
   {
     id: "limpieza",
     nombre: "Limpieza",
     Icon: Sparkles,
     color: "bg-emerald-400 hover:bg-emerald-500",
-    categorias: ["limpieza", "aseo", "desinfección"]
+    categorias: ["limpieza", "productos de limpieza"]
   },
   {
     id: "abarrotes",
     nombre: "Abarrotes",
     Icon: ShoppingCart,
     color: "bg-amber-400 hover:bg-amber-500",
-    categorias: ["abarrotes", "comestibles", "alimentos", "bebidas", "snacks"]
+    categorias: ["lacteos", "cereales", "enlatados", "bebidas", "snacks", "condimentos"]
   },
   {
     id: "tecnologia",
     nombre: "Tecnología",
     Icon: Laptop,
     color: "bg-indigo-400 hover:bg-indigo-500",
-    categorias: ["tecnologia", "electrónica", "electronica", "tecnología"]
+    categorias: ["tecnologia", "electronica", "gadgets"]
   },
   {
     id: "hogar",
     nombre: "Hogar",
     Icon: Home,
     color: "bg-teal-400 hover:bg-teal-500",
-    categorias: ["hogar", "casa", "decoración", "decoracion", "muebles"]
+    categorias: ["hogar", "decoracion", "muebles"]
   },
   {
     id: "herramientas",
     nombre: "Herramientas",
     Icon: Wrench,
     color: "bg-slate-400 hover:bg-slate-500",
-    categorias: ["herramientas", "ferretería", "ferreteria", "construcción", "construccion"]
+    categorias: ["herramientas", "ferreteria"]
   },
   {
     id: "mascotas",
     nombre: "Mascotas",
     Icon: PawPrint,
     color: "bg-orange-300 hover:bg-orange-400",
-    categorias: ["mascotas", "pets", "animales"]
+    categorias: ["mascotas", "animales", "petshop"]
   },
   {
     id: "belleza",
     nombre: "Belleza",
     Icon: Palette,
     color: "bg-pink-400 hover:bg-pink-500",
-    categorias: ["belleza", "maquillaje", "cosméticos", "cosmeticos"]
+    categorias: ["belleza", "cosmeticos", "maquillaje"]
   },
   {
     id: "aseo_personal",
     nombre: "Aseo Personal",
     Icon: Droplets,
     color: "bg-cyan-400 hover:bg-cyan-500",
-    categorias: ["aseo", "higiene", "personal", "baño"]
+    categorias: ["aseo", "higiene", "cuidado personal"]
   },
   {
     id: "libreria",
     nombre: "Librería",
     Icon: BookOpen,
     color: "bg-violet-400 hover:bg-violet-500",
-    categorias: ["libreria", "librería", "útiles", "utiles", "papelería", "papeleria"]
+    categorias: ["libreria", "papeleria", "libros"]
   },
   {
     id: "licores",
     nombre: "Licores",
     Icon: Wine,
     color: "bg-red-600 hover:bg-red-700",
-    categorias: ["licores", "bebidas alcoholicas", "alcohol", "vinos"]
+    categorias: ["licores", "bebidas alcoholicas", "vinos"]
   }
 ];
 
@@ -193,7 +193,8 @@ export function obtenerCamposPersonalizados(clasificacionId: string): Configurac
         camposObligatorios: [
           { nombre: "talla", obligatorio: true, tipo: "text", placeholder: "Ej: S, M, L, XL, 38, 40" },
           { nombre: "color", obligatorio: true, tipo: "text", placeholder: "Ej: Rojo, Azul, Negro" },
-          { nombre: "genero", obligatorio: true, tipo: "select", opciones: ["Hombre", "Mujer", "Unisex", "Niño", "Niña"] }
+          { nombre: "genero", obligatorio: true, tipo: "select", opciones: ["Hombre", "Mujer", "Unisex", "Niño", "Niña"] },
+          { nombre: "tipo_tela", obligatorio: true, tipo: "text", placeholder: "Ej: Algodón, Poliéster, Jean, Cuero" }
         ],
         camposOpcionales: [
           { nombre: "garantia_dias", obligatorio: false, tipo: "number", placeholder: "Ej: 30, 90" }

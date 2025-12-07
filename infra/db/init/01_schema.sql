@@ -58,6 +58,7 @@ create table if not exists productos(
   
   -- Campos específicos por clasificación
   genero text,                               -- Ropa/Calzado: Hombre, Mujer, Unisex, Niño, Niña
+  tipo_tela text,                            -- Ropa/Calzado: Algodón, Poliéster, Jean, Cuero, etc.
   tipo_mascota text,                         -- Mascotas: Perro, Gato, Ave, Roedor, Pez, Reptil, Otro
   tono_aroma text,                           -- Belleza/Aseo: Lavanda, Neutro, Rosa, etc.
   tipo_piel_cabello text,                    -- Belleza/Aseo: Piel grasa, Cabello seco, etc.

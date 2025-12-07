@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X, Sparkles, Info, Bot } from "lucide-react";
+import { Upload, X, Sparkles, Info } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -18,7 +18,6 @@ import { uploadPublicFile } from "@/services/files";
 import { listCategorias } from "@/services/inventory";
 import { listProveedores } from "@/services/providers";
 import { obtenerCamposPersonalizados, CLASIFICACIONES } from "@/components/ClasificacionesInventario";
-import { analizarProductoPorImagen } from "@/services/ai";
 
 export interface ProductoModalProps {
   isOpen: boolean;
@@ -44,7 +43,6 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenPreview, setImagenPreview] = useState<string | null>(null);
   const [imagenUrlInput, setImagenUrlInput] = useState<string>("");
-  const [analizandoIA, setAnalizandoIA] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -86,6 +84,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
 
     // campos específicos por clasificación
     genero: null as string | null,
+    tipo_tela: null as string | null,
     tipo_mascota: null as string | null,
     tono_aroma: null as string | null,
     tipo_piel_cabello: null as string | null,
@@ -161,6 +160,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
         garantia_dias: productoExtendido.garantia_dias ?? null,
         notas_internas: productoExtendido.notas_internas ?? null,
         genero: productoExtendido.genero ?? null,
+        tipo_tela: productoExtendido.tipo_tela ?? null,
         tipo_mascota: productoExtendido.tipo_mascota ?? null,
         tono_aroma: productoExtendido.tono_aroma ?? null,
         tipo_piel_cabello: productoExtendido.tipo_piel_cabello ?? null,
@@ -212,6 +212,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
         garantia_dias: null,
         notas_internas: null,
         genero: null,
+        tipo_tela: null,
         tipo_mascota: null,
         tono_aroma: null,
         tipo_piel_cabello: null,
@@ -250,46 +251,6 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
     setFormData((f) => ({ ...f, categoria: categoriaLimpia }));
     setNuevaCategoria("");
     setMostrarNuevaCategoria(false);
-  }
-
-  async function analizarConIA() {
-    const urlImagen = imagenUrlInput || imagenPreview;
-    if (!urlImagen) {
-      toast({
-        title: "No hay imagen",
-        description: "Por favor, sube una imagen o pega una URL primero",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAnalizandoIA(true);
-    try {
-      const sugerencias = await analizarProductoPorImagen(urlImagen, clasificacionActiva || undefined);
-      
-      // Autocompletar campos pero permitir edición
-      setFormData(prev => ({
-        ...prev,
-        nombre: sugerencias.nombre || prev.nombre,
-        marca: sugerencias.marca || prev.marca,
-        categoria: sugerencias.categoria || prev.categoria,
-        precio_venta: sugerencias.precio_venta || prev.precio_venta,
-        volumen_peso_neto: sugerencias.volumen_peso_neto || prev.volumen_peso_neto,
-      }));
-
-      toast({
-        title: "✨ Análisis completado",
-        description: "Los campos han sido autocompletados. Puedes editarlos si es necesario.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error al analizar",
-        description: "No se pudo analizar la imagen. Completa los campos manualmente.",
-        variant: "destructive",
-      });
-    } finally {
-      setAnalizandoIA(false);
-    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -374,6 +335,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
 
       // campos específicos por clasificación
       genero: formData.genero?.trim() || null,
+      tipo_tela: formData.tipo_tela?.trim() || null,
       tipo_mascota: formData.tipo_mascota?.trim() || null,
       tono_aroma: formData.tono_aroma?.trim() || null,
       tipo_piel_cabello: formData.tipo_piel_cabello?.trim() || null,
@@ -456,22 +418,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
 
           {/* Imagen - Opción 2: URL externa */}
           <div className="space-y-2 bg-white p-4 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="imagen_url" className="text-sm font-medium">O pega URL de imagen externa</Label>
-              {(imagenUrlInput || imagenPreview) && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={analizarConIA}
-                  disabled={analizandoIA}
-                  className="text-xs"
-                >
-                  <Bot className="h-3 w-3 mr-1" />
-                  {analizandoIA ? "Analizando..." : "Analizar con IA"}
-                </Button>
-              )}
-            </div>
+            <Label htmlFor="imagen_url" className="text-sm font-medium">O pega URL de imagen externa</Label>
             <div className="flex gap-2 items-start">
               <div className="flex-1 space-y-2">
                 <Input
@@ -517,10 +464,10 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
             </div>
           </div>
 
-          {/* Sección: Información Básica */}
-          <div className="space-y-4 bg-gradient-to-r from-teal-50 to-emerald-50 p-4 rounded-lg border border-teal-200">
-            <h3 className="text-sm font-semibold text-teal-800 flex items-center gap-2">
-              <div className="h-1 w-1 rounded-full bg-teal-600"></div>
+          {}
+          <div className="space-y-4 bg-gradient-to-r from-teal-50 to-emerald-100 p-4 rounded-lg border border-teal-0">
+            <h3 className="text-sm font-semibold text-teal-600 flex items-center gap-2">
+              <div className="h-1 w-1 rounded-full bg-teal-500"></div>
               Información Básica
             </h3>
             
@@ -680,7 +627,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock_bajo" className="text-sm font-medium">
-                  Stock Bajo (umbral)
+                  Stock Bajo
                 </Label>
                 <Input
                   id="stock_bajo"
@@ -691,7 +638,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
                   className="border-gray-300"
                 />
                 <p className="text-xs text-muted-foreground">
-                  El estado se actualiza automáticamente según este umbral
+                  Puedes seleccionar desde que nivel de stock se considera "bajo" para este producto.
                 </p>
               </div>
             </div>
@@ -700,7 +647,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
           {/* Sección: Campos Específicos por Clasificación */}
           {clasificacionActiva && (camposPersonalizados.camposObligatorios.length > 0 || camposPersonalizados.camposOpcionales.length > 0 || camposPersonalizados.requiereFechaVencimiento) && (
             <div className="space-y-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-              <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-teal-700 flex items-center gap-2">
                 <div className="h-1 w-1 rounded-full bg-blue-600"></div>
                 Campos Específicos - {CLASIFICACIONES.find(c => c.id === clasificacionActiva)?.nombre}
               </h3>
@@ -708,7 +655,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
               {/* Fecha de Vencimiento si es requerido */}
               {camposPersonalizados.requiereFechaVencimiento && (
                 <div className="space-y-2">
-                  <Label htmlFor="fecha_vencimiento" className="text-sm font-medium text-red-700">
+                  <Label htmlFor="fecha_vencimiento" className="text-sm font-medium text-emerald-500">
                     Fecha de Vencimiento *
                   </Label>
                   <Input
@@ -725,7 +672,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
               {/* Campos Obligatorios */}
               {camposPersonalizados.camposObligatorios.map((campo: any) => (
                 <div key={campo.nombre} className="space-y-2">
-                  <Label htmlFor={campo.nombre} className="text-sm font-medium text-red-700">
+                  <Label htmlFor={campo.nombre} className="text-sm font-medium text-emerald-500">
                     {campo.nombre === 'volumen_peso_neto' ? 'Volumen/Peso Neto' :
                      campo.nombre === 'genero' ? 'Género' :
                      campo.nombre === 'tipo_mascota' ? 'Tipo de Mascota' :
@@ -782,10 +729,10 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
               {/* Campos Opcionales */}
               {camposPersonalizados.camposOpcionales.length > 0 && (
                 <div className="space-y-3 pt-2 border-t border-blue-200">
-                  <p className="text-xs font-medium text-blue-700">Campos Opcionales</p>
+                  <p className="text-xs font-medium text-teal-700">Campos Opcionales</p>
                   {camposPersonalizados.camposOpcionales.map((campo: any) => (
                     <div key={campo.nombre} className="space-y-2">
-                      <Label htmlFor={campo.nombre} className="text-sm font-medium text-gray-700">
+                      <Label htmlFor={campo.nombre} className="text-sm font-medium text-emerald-500">
                         {campo.nombre === 'garantia_dias' ? 'Garantía (días)' :
                          campo.nombre === 'detalles_clave' ? 'Detalles Clave' :
                          campo.nombre === 'material' ? 'Material' :

@@ -46,6 +46,7 @@ export interface Producto {
   
   // nuevos campos por clasificación
   genero?: string | null;
+  tipo_tela?: string | null;
   tipo_mascota?: string | null;
   tono_aroma?: string | null;
   tipo_piel_cabello?: string | null;
@@ -101,6 +102,7 @@ export interface CrearProductoDTO {
   
   // nuevos campos por clasificación
   genero?: string | null;
+  tipo_tela?: string | null;
   tipo_mascota?: string | null;
   tono_aroma?: string | null;
   tipo_piel_cabello?: string | null;
