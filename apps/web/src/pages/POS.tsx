@@ -27,7 +27,7 @@ import {
 const POS = () => {
   const { productos } = useInventario();
   const { registrarVenta, loading } = useVentas();
-  const { clientes } = useFiados();
+  const { clientes, cargar: cargarClientes, registrarCliente } = useFiados();
   const { toast } = useToast();
   const [carrito, setCarrito] = useState<ItemVenta[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,6 +35,8 @@ const POS = () => {
   const [clienteSeleccionado, setClienteSeleccionado] = useState('');
   const [escuchando, setEscuchando] = useState(false);
   const [modoEscaneo, setModoEscaneo] = useState(false);
+  const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', celular: '' });
+  const [creandoCliente, setCreandoCliente] = useState(false);
   const recognitionRef = useRef<any>(null);
   const scanBufferRef = useRef<string>('');
 
@@ -321,10 +323,10 @@ const POS = () => {
                         <Minus className="h-4 w-4" />
                       </Button>
                       <Input 
-                        type="number" 
+                        type="number"
+                        className="w-16 text-center"
                         value={item.cantidad}
-                        onChange={(e) => actualizarCantidad(item.producto_id, parseInt(e.target.value) || 0)}
-                        className="w-16 h-8 text-center"
+                        onChange={(e) => actualizarCantidad(item.producto_id, Number(e.target.value))}
                       />
                       <Button 
                         variant="outline" 
@@ -334,95 +336,14 @@ const POS = () => {
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => eliminarDelCarrito(item.producto_id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => eliminarDelCarrito(item.producto_id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 ))
-              )}
-            </div>
-
-            {/* Total */}
-            <div className="border-t border-border pt-4 space-y-2">
-              <div className="flex justify-between text-lg">
-                <span className="text-muted-foreground">Subtotal:</span>
-                <span className="font-semibold">S/. {subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-2xl">
-                <span className="font-bold">Total:</span>
-                <span className="font-bold text-primary">S/. {subtotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Acciones */}
-            <div className="grid grid-cols-2 gap-3 mt-6">
-              <Button 
-                className="h-12" 
-                onClick={handleCobrar}
-                disabled={carrito.length === 0 || loading}
-              >
-                Cobrar
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-12"
-                onClick={() => setFiadoDialogOpen(true)}
-                disabled={carrito.length === 0 || loading}
-              >
-                Fiar
-              </Button>
-            </div>
-            <Button 
-              variant="ghost" 
-              className="w-full mt-2"
-              onClick={() => setCarrito([])}
-              disabled={carrito.length === 0}
-            >
-              Cancelar
-            </Button>
-          </Card>
-        </div>
-      </div>
-
-      <Dialog open={fiadoDialogOpen} onOpenChange={setFiadoDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Seleccionar Cliente</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Select value={clienteSeleccionado} onValueChange={setClienteSeleccionado}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientes.map(cliente => (
-                  <SelectItem key={cliente.id} value={cliente.id}>
-                    {cliente.nombre} - Deuda: S/. {cliente.deuda_total.toFixed(2)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setFiadoDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleFiar} disabled={!clienteSeleccionado || loading}>
-                Confirmar Fiado
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <ChatbotWidget />
-    </Layout>
-  );
-};
-
-export default POS;

@@ -36,7 +36,8 @@ export function useFiados() {
 
   async function registrarCliente(dto: CrearClienteDTO) {
     const nuevo = await createCliente(dto);
-    setClientes((prev) => [nuevo, ...prev]);
+    await cargar();
+    return nuevo;
   }
 
   async function registrarPago(

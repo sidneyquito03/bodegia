@@ -28,7 +28,7 @@ r.get("/summary", requireAuth, async (req, res) => {
     
     // Ganancia del día (venta_precio - costo)
     const gananciaRes = await db.manyOrNone(
-      `SELECT (vd.precio_unitario - COALESCE(p.costo, 0)) * vd.cantidad as ganancia
+      `SELECT (vd.precio_unitario - COALESCE(p.precio_costo, 0)) * vd.cantidad as ganancia
        FROM ventas v
        JOIN ventas_detalle vd ON v.id = vd.venta_id
        JOIN productos p ON vd.producto_id = p.id
