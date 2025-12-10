@@ -30,8 +30,14 @@ export interface ProductoModalProps {
 export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacionActiva }: ProductoModalProps) => {
   const { toast } = useToast();
 
-  const camposPersonalizados = clasificacionActiva
-    ? obtenerCamposPersonalizados(clasificacionActiva)
+  // Detectar clasificación automáticamente basándose en la categoría del producto
+  const [clasificacionDetectada, setClasificacionDetectada] = useState<string | null>(clasificacionActiva || null);
+  
+  // Determinar la clasificación a usar (la detectada del producto o la activa)
+  const clasificacionFinal = clasificacionDetectada || clasificacionActiva;
+
+  const camposPersonalizados = clasificacionFinal
+    ? obtenerCamposPersonalizados(clasificacionFinal)
     : { requiereFechaVencimiento: false, camposObligatorios: [], camposOpcionales: [] };
 
   const [categorias, setCategorias] = useState<string[]>([]);
@@ -103,7 +109,23 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
     (async () => {
       try {
         const cats = await listCategorias();
-        setCategorias(cats.map((c) => c.toLowerCase().trim()).sort());
+        let categoriasDisponibles = cats.map((c) => c.toLowerCase().trim()).sort();
+        
+        // Si hay clasificación activa, filtrar solo categorías de esa clasificación
+        if (clasificacionFinal) {
+          const clasificacion = CLASIFICACIONES.find(c => c.id === clasificacionFinal);
+          if (clasificacion) {
+            categoriasDisponibles = categoriasDisponibles.filter(cat => {
+              return clasificacion.categorias.some(clasifCat => 
+                cat === clasifCat.toLowerCase() || 
+                cat.includes(clasifCat.toLowerCase()) || 
+                clasifCat.toLowerCase().includes(cat)
+              );
+            });
+          }
+        }
+        
+        setCategorias(categoriasDisponibles);
       } catch (e) {
         console.error("categorías:", e);
       }
@@ -114,7 +136,7 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
         console.error("proveedores:", e);
       }
     })();
-  }, []);
+  }, [clasificacionFinal]);
 
   // hidratar form cuando llega producto o al abrir modal
   useEffect(() => {
@@ -124,6 +146,20 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
     }
     
     if (producto) {
+      // Detectar clasificación del producto basándose en su categoría
+      const categoriaProducto = producto.categoria.toLowerCase().trim();
+      const clasificacionEncontrada = CLASIFICACIONES.find(c => 
+        c.categorias.some(cat => 
+          categoriaProducto === cat.toLowerCase() || 
+          categoriaProducto.includes(cat.toLowerCase()) || 
+          cat.toLowerCase().includes(categoriaProducto)
+        )
+      );
+      
+      if (clasificacionEncontrada) {
+        setClasificacionDetectada(clasificacionEncontrada.id);
+      }
+      
       // Modo edición - hidratar con datos del producto
       const productoExtendido = producto as any;
       setFormData({
@@ -228,10 +264,11 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
       setImagenPreview(null);
       setImagenUrlInput("");
       setImagenFile(null);
+      setClasificacionDetectada(clasificacionActiva || null);
     }
     setMostrarNuevaCategoria(false);
     setNuevaCategoria("");
-  }, [producto, isOpen]);
+  }, [producto, isOpen, clasificacionActiva]);
 
   function handleImagenChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -645,11 +682,11 @@ export const ProductoModal = ({ isOpen, onClose, onSave, producto, clasificacion
           </div>
 
           {/* Sección: Campos Específicos por Clasificación */}
-          {clasificacionActiva && (camposPersonalizados.camposObligatorios.length > 0 || camposPersonalizados.camposOpcionales.length > 0 || camposPersonalizados.requiereFechaVencimiento) && (
+          {clasificacionFinal && (camposPersonalizados.camposObligatorios.length > 0 || camposPersonalizados.camposOpcionales.length > 0 || camposPersonalizados.requiereFechaVencimiento) && (
             <div className="space-y-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
               <h3 className="text-sm font-semibold text-teal-700 flex items-center gap-2">
                 <div className="h-1 w-1 rounded-full bg-blue-600"></div>
-                Campos Específicos - {CLASIFICACIONES.find(c => c.id === clasificacionActiva)?.nombre}
+                Campos Específicos - {CLASIFICACIONES.find(c => c.id === clasificacionFinal)?.nombre}
               </h3>
 
               {/* Fecha de Vencimiento si es requerido */}

@@ -40,7 +40,7 @@ import {
 } from "@/services/mermas";
 import { RegistrarMermaModal } from "@/components/modals/RegistrarMermaModal";
 
-const ControlMermas = () => {
+const ControlMermas = ({ clasificacionActiva }: { clasificacionActiva?: string | null }) => {
   const [mermas, setMermas] = useState<Merma[]>([]);
   const [estadisticas, setEstadisticas] = useState<EstadisticasMermas | null>(null);
   const [loading, setLoading] = useState(true);
@@ -413,11 +413,17 @@ const ControlMermas = () => {
 
       <RegistrarMermaModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setMermaToEdit(null);
+        }}
         onSuccess={() => {
           setModalOpen(false);
+          setMermaToEdit(null);
           cargarDatos();
         }}
+        mermaToEdit={mermaToEdit}
+        clasificacionActiva={clasificacionActiva}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

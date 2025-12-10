@@ -24,12 +24,14 @@ import { Search, Package, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
 import type { Merma } from "@/services/mermas";
+import { CLASIFICACIONES } from "@/components/ClasificacionesInventario";
 
 interface RegistrarMermaModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   mermaToEdit?: Merma | null;
+  clasificacionActiva?: string | null;
 }
 
 export const RegistrarMermaModal = ({
@@ -37,11 +39,13 @@ export const RegistrarMermaModal = ({
   onClose,
   onSuccess,
   mermaToEdit,
+  clasificacionActiva,
 }: RegistrarMermaModalProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [clasificacionFiltro, setClasificacionFiltro] = useState<string | null>(clasificacionActiva || null);
   const [formData, setFormData] = useState({
     producto_id: "",
     tipo_merma: "vencido" as TipoMerma,
@@ -86,11 +90,27 @@ export const RegistrarMermaModal = ({
     }
   };
 
-  const productosFiltrados = productos.filter(
-    (p) =>
-      p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const productosFiltrados = productos.filter((p) => {
+    // Filtro por texto de búsqueda
+    const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filtro por clasificación seleccionada en el modal
+    let matchClasificacion = true;
+    if (clasificacionFiltro) {
+      const clasificacion = CLASIFICACIONES.find(c => c.id === clasificacionFiltro);
+      if (clasificacion) {
+        const categoriaProducto = p.categoria.toLowerCase().trim();
+        matchClasificacion = clasificacion.categorias.some(cat => 
+          categoriaProducto === cat.toLowerCase() || 
+          categoriaProducto.includes(cat.toLowerCase()) || 
+          cat.toLowerCase().includes(categoriaProducto)
+        );
+      }
+    }
+    
+    return matchSearch && matchClasificacion;
+  });
 
   const productoSeleccionado = productos.find((p) => p.id === formData.producto_id);
 
@@ -187,18 +207,108 @@ export const RegistrarMermaModal = ({
 
 
         <form onSubmit={handleSubmit} className="space-y-7 overflow-y-auto flex-1 pr-2">
-          <div className="space-y-3">
-            <Label>Buscar y Seleccionar Producto *</Label>
-            
-       <div className="relative">
-  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-  <Input
-    placeholder="Buscar por nombre, código o marca..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="pl-9 focus-visible:ring-teal-400"
-  />
-</div>
+          
+          {/* Si estamos editando, mostrar el producto seleccionado (NO editable) con indicador de clasificación */}
+          {mermaToEdit && productoSeleccionado ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Producto</Label>
+                {/* Indicador de Clasificación */}
+                {(() => {
+                  const categoriaProducto = productoSeleccionado.categoria.toLowerCase().trim();
+                  const clasificacionProducto = CLASIFICACIONES.find(c => 
+                    c.categorias.some(cat => 
+                      categoriaProducto === cat.toLowerCase() || 
+                      categoriaProducto.includes(cat.toLowerCase()) || 
+                      cat.toLowerCase().includes(categoriaProducto)
+                    )
+                  );
+                  
+                  return clasificacionProducto ? (
+                    <Badge className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white">
+                      {clasificacionProducto.icon} {clasificacionProducto.nombre}
+                    </Badge>
+                  ) : null;
+                })()}
+              </div>
+              <div className="p-4 rounded-lg border-2 border-teal-200 bg-teal-50">
+                <div className="flex items-center gap-3">
+                  {/* Imagen del producto */}
+                  <div className="flex-shrink-0">
+                    {(productoSeleccionado as any).imagen_url ? (
+                      <img
+                        src={(productoSeleccionado as any).imagen_url}
+                        alt={productoSeleccionado.nombre}
+                        className="w-16 h-16 object-cover rounded border"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/64?text=Sin+Img';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded border flex items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Info del producto */}
+                  <div className="flex-1">
+                    <p className="font-semibold text-base">{productoSeleccionado.nombre}</p>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                      <span>#{productoSeleccionado.codigo}</span>
+                      <span>•</span>
+                      <span>{productoSeleccionado.categoria}</span>
+                    </div>
+                    <Badge variant="outline" className="mt-2">
+                      Stock: {productoSeleccionado.stock}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Modo crear: Mostrar búsqueda de productos con filtros de clasificación */
+            <div className="space-y-3">
+              <Label>Buscar y Seleccionar Producto *</Label>
+              
+              {/* Botones de Clasificación para filtrar productos */}
+              <div className="flex flex-wrap gap-2 p-3 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-lg border border-teal-200">
+                <button
+                  type="button"
+                  onClick={() => setClasificacionFiltro(null)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    clasificacionFiltro === null
+                      ? 'bg-teal-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-teal-100'
+                  }`}
+                >
+                  Todas
+                </button>
+                {CLASIFICACIONES.map((clasificacion) => (
+                  <button
+                    key={clasificacion.id}
+                    type="button"
+                    onClick={() => setClasificacionFiltro(clasificacion.id)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      clasificacionFiltro === clasificacion.id
+                        ? 'bg-teal-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-teal-100'
+                    }`}
+                  >
+                    {clasificacion.icon} {clasificacion.nombre}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre, código o marca..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 focus-visible:ring-teal-400"
+                />
+              </div>
 
 
             {/* Cards de productos */}
@@ -290,7 +400,7 @@ export const RegistrarMermaModal = ({
               )}
             </div>
 
-            {productoSeleccionado && (
+            {productoSeleccionado && !mermaToEdit && (
               <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg">
                 <p className="text-sm font-medium text-teal-900">
                   ✅ Producto seleccionado: {productoSeleccionado.nombre}
@@ -302,6 +412,7 @@ export const RegistrarMermaModal = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Tipo de merma */}
           <div className="space-y-2">
