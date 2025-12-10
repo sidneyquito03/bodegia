@@ -216,8 +216,8 @@ const POS = () => {
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input 
-                      placeholder="Buscar producto o escanear código..." 
+                    <Input
+                      placeholder="Buscar producto o escanear código..."
                       className="pl-10 h-12 text-lg"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -261,15 +261,15 @@ const POS = () => {
               {/* Grid de productos */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto">
                 {productosFiltrados.map((producto) => (
-                  <Card 
-                    key={producto.id} 
+                  <Card
+                    key={producto.id}
                     className="p-4 hover:shadow-md transition-shadow cursor-pointer"
                     onClick={() => agregarAlCarrito(producto)}
                   >
                     <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                       {(producto as any).imagen_url ? (
-                        <img 
-                          src={(producto as any).imagen_url} 
+                        <img
+                          src={(producto as any).imagen_url}
                           alt={producto.nombre}
                           className="w-full h-full object-cover"
                         />
@@ -298,7 +298,16 @@ const POS = () => {
           {/* Carrito - 2 columnas */}
           <Card className="lg:col-span-2 p-6 shadow-card lg:sticky lg:top-8 h-fit">
             <h2 className="text-xl font-semibold mb-4">Carrito</h2>
-            
+            {carrito.length > 0 && (
+              <div className="mb-4 flex flex-col gap-2">
+                <Button variant="secondary" onClick={() => setFiadoDialogOpen(true)} disabled={loading}>
+                  Fiar
+                </Button>
+                <Button variant="default" onClick={handleCobrar} disabled={loading}>
+                  Cobrar
+                </Button>
+              </div>
+            )}
             <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto">
               {carrito.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -314,31 +323,31 @@ const POS = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
+                      <Button
+                        variant="outline"
+                        size="icon"
                         className="h-8 w-8"
                         onClick={() => actualizarCantidad(item.producto_id, item.cantidad - 1)}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <Input 
+                      <Input
                         type="number"
                         className="w-16 text-center"
                         value={item.cantidad}
                         onChange={(e) => actualizarCantidad(item.producto_id, Number(e.target.value))}
                       />
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
+                      <Button
+                        variant="outline"
+                        size="icon"
                         className="h-8 w-8"
                         onClick={() => actualizarCantidad(item.producto_id, item.cantidad + 1)}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="icon" 
+                      <Button
+                        variant="destructive"
+                        size="icon"
                         className="h-8 w-8"
                         onClick={() => eliminarDelCarrito(item.producto_id)}
                       >
@@ -347,3 +356,42 @@ const POS = () => {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+
+            {/* --- MODAL SELECCIÓN DE CLIENTE PARA FIADO --- */}
+            <Dialog open={fiadoDialogOpen} onOpenChange={setFiadoDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Selecciona el cliente a fiar</DialogTitle>
+                </DialogHeader>
+                <Select value={clienteSeleccionado} onValueChange={setClienteSeleccionado}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes.filter(c => c.activo !== false).map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nombre} ({c.celular})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  className="w-full mt-4"
+                  variant="secondary"
+                  onClick={handleFiar}
+                  disabled={!clienteSeleccionado || loading}
+                >
+                  Confirmar Fiado
+                </Button>
+              </DialogContent>
+            </Dialog>
+          </Card>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default POS;
