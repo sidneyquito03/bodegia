@@ -155,7 +155,7 @@ const POS = () => {
         producto_id: producto.id,
         nombre: producto.nombre,
         cantidad: 1,
-        precio: producto.precio_venta
+        precio_unitario: producto.precio_venta
       }]);
     }
   };
@@ -176,11 +176,11 @@ const POS = () => {
     setCarrito(carrito.filter(item => item.producto_id !== producto_id));
   };
 
-  const subtotal = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+  const subtotal = carrito.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
 
   const handleCobrar = async () => {
     if (carrito.length === 0) return;
-    const success = await registrarVenta(carrito, 'efectivo');
+    const success = await registrarVenta(carrito, 'Cobrado');
     if (success) {
       setCarrito([]);
     }
@@ -188,7 +188,7 @@ const POS = () => {
 
   const handleFiar = async () => {
     if (carrito.length === 0 || !clienteSeleccionado) return;
-    const success = await registrarVenta(carrito, 'fiado', clienteSeleccionado);
+    const success = await registrarVenta(carrito, 'Fiado', clienteSeleccionado);
     if (success) {
       setCarrito([]);
       setFiadoDialogOpen(false);
@@ -308,7 +308,7 @@ const POS = () => {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{item.nombre}</p>
                       <p className="text-sm text-muted-foreground">
-                        S/. {item.precio.toFixed(2)}
+                        S/. {item.precio_unitario.toFixed(2)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

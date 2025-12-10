@@ -1,6 +1,7 @@
 import { Router } from "express";
 import db from "../db/index";
 import { z } from "zod";
+import { requireAuth, requireRole } from "../middleware/auth";
 export const inventoryRouter = Router();
 
 
@@ -20,7 +21,17 @@ inventoryRouter.get("/products", async (_req, res) => {
         fecha_vencimiento
       ) as estado,
       imagen_url, proveedor_id, fecha_vencimiento, marca, medida_peso,
-      stock_bajo, created_at, updated_at
+      stock_bajo, created_at, updated_at,
+      -- Campos adicionales generales
+      ubicacion_almacen, lote_numero, codigo_barras_adicional, unidad_medida,
+      es_perecedero, requiere_refrigeracion, temperatura_almacenamiento,
+      dias_vida_util, es_fraccionable, peso_unitario, volumen_unitario,
+      alto_cm, ancho_cm, profundo_cm, color, talla, material, garantia_dias,
+      notas_internas,
+      -- Campos específicos por clasificación
+      genero, tipo_tela, tipo_mascota, tono_aroma, tipo_piel_cabello,
+      autor, editorial, isbn_ean, formato_libro, numero_paginas,
+      especificacion_electrica, detalles_clave, volumen_peso_neto
     FROM productos
     ORDER BY nombre
   `);
@@ -30,8 +41,15 @@ inventoryRouter.get("/products", async (_req, res) => {
     stock: Number(r.stock),
     precio_costo: Number(r.precio_costo),
     precio_venta: Number(r.precio_venta),
-    //stock_critico: r.stock_critico != null ? Number(r.stock_critico) : null,
     stock_bajo: r.stock_bajo != null ? Number(r.stock_bajo) : null,
+    alto_cm: r.alto_cm != null ? Number(r.alto_cm) : null,
+    ancho_cm: r.ancho_cm != null ? Number(r.ancho_cm) : null,
+    profundo_cm: r.profundo_cm != null ? Number(r.profundo_cm) : null,
+    garantia_dias: r.garantia_dias != null ? Number(r.garantia_dias) : null,
+    dias_vida_util: r.dias_vida_util != null ? Number(r.dias_vida_util) : null,
+    peso_unitario: r.peso_unitario != null ? Number(r.peso_unitario) : null,
+    volumen_unitario: r.volumen_unitario != null ? Number(r.volumen_unitario) : null,
+    numero_paginas: r.numero_paginas != null ? Number(r.numero_paginas) : null,
   }));
 
   res.json(data);
@@ -54,7 +72,7 @@ const createSchema = z.object({
   stock_bajo: z.number().int().min(0).optional(),
 });
 
-inventoryRouter.post("/", async (req, res) => {
+inventoryRouter.post("/", requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const data = createSchema.parse(req.body);
     
@@ -100,7 +118,7 @@ inventoryRouter.post("/", async (req, res) => {
 });
 
 // PATCH /inventory/:id - Actualizar producto
-inventoryRouter.patch("/:id", async (req, res) => {
+inventoryRouter.patch("/:id", requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -138,7 +156,17 @@ inventoryRouter.patch("/:id", async (req, res) => {
     const permitidos = [
       'nombre', 'codigo', 'stock', 'precio_costo', 'precio_venta', 'categoria',
       'imagen_url', 'proveedor_id', 'fecha_vencimiento', 'marca', 'medida_peso',
-      'stock_bajo'
+      'stock_bajo',
+      // Campos adicionales generales
+      'ubicacion_almacen', 'lote_numero', 'codigo_barras_adicional', 'unidad_medida',
+      'es_perecedero', 'requiere_refrigeracion', 'temperatura_almacenamiento',
+      'dias_vida_util', 'es_fraccionable', 'peso_unitario', 'volumen_unitario',
+      'alto_cm', 'ancho_cm', 'profundo_cm', 'color', 'talla', 'material', 'garantia_dias',
+      'notas_internas',
+      // Campos específicos por clasificación
+      'genero', 'tipo_tela', 'tipo_mascota', 'tono_aroma', 'tipo_piel_cabello',
+      'autor', 'editorial', 'isbn_ean', 'formato_libro', 'numero_paginas',
+      'especificacion_electrica', 'detalles_clave', 'volumen_peso_neto'
     ];
     
     for (const key of permitidos) {
@@ -165,7 +193,15 @@ inventoryRouter.patch("/:id", async (req, res) => {
         precio_costo::numeric::text AS precio_costo,
         precio_venta::numeric::text AS precio_venta,
         categoria, estado, imagen_url, proveedor_id, fecha_vencimiento,
-        marca, medida_peso, stock_bajo, created_at, updated_at
+        marca, medida_peso, stock_bajo, created_at, updated_at,
+        -- Campos adicionales
+        ubicacion_almacen, lote_numero, codigo_barras_adicional, unidad_medida,
+        es_perecedero, requiere_refrigeracion, temperatura_almacenamiento,
+        dias_vida_util, es_fraccionable, peso_unitario, volumen_unitario,
+        alto_cm, ancho_cm, profundo_cm, color, talla, material, garantia_dias,
+        notas_internas, genero, tipo_tela, tipo_mascota, tono_aroma, tipo_piel_cabello,
+        autor, editorial, isbn_ean, formato_libro, numero_paginas,
+        especificacion_electrica, detalles_clave, volumen_peso_neto
     `;
     
     const producto = await db.one(query, valores);
@@ -174,6 +210,15 @@ inventoryRouter.patch("/:id", async (req, res) => {
       ...producto,
       precio_costo: Number(producto.precio_costo),
       precio_venta: Number(producto.precio_venta),
+      stock_bajo: producto.stock_bajo != null ? Number(producto.stock_bajo) : null,
+      alto_cm: producto.alto_cm != null ? Number(producto.alto_cm) : null,
+      ancho_cm: producto.ancho_cm != null ? Number(producto.ancho_cm) : null,
+      profundo_cm: producto.profundo_cm != null ? Number(producto.profundo_cm) : null,
+      garantia_dias: producto.garantia_dias != null ? Number(producto.garantia_dias) : null,
+      dias_vida_util: producto.dias_vida_util != null ? Number(producto.dias_vida_util) : null,
+      peso_unitario: producto.peso_unitario != null ? Number(producto.peso_unitario) : null,
+      volumen_unitario: producto.volumen_unitario != null ? Number(producto.volumen_unitario) : null,
+      numero_paginas: producto.numero_paginas != null ? Number(producto.numero_paginas) : null,
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -181,7 +226,7 @@ inventoryRouter.patch("/:id", async (req, res) => {
 });
 
 // DELETE /inventory/:id - Eliminar producto
-inventoryRouter.delete("/:id", async (req, res) => {
+inventoryRouter.delete(":id", requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     await db.none("DELETE FROM productos WHERE id=$1", [id]);
@@ -208,7 +253,7 @@ const itemSchema = z.object({
   stock_bajo: z.number().optional(),
 });
 
-inventoryImportRouter.post("/import-json", async (req, res) => {
+inventoryImportRouter.post("/import-json", requireAuth, requireRole('admin'), async (req, res) => {
   const items = z.array(itemSchema).parse(req.body.items);
   let inserted = 0,
     updated = 0,

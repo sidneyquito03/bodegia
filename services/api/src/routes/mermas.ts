@@ -1,6 +1,7 @@
 import { Router } from "express";
 import db from "../db/index";
 import { z } from "zod";
+import { requireAuth, requireRole } from "../middleware/auth";
 
 export const mermasRouter = Router();
 
@@ -16,7 +17,7 @@ const crearMermaSchema = z.object({
 /**
  * POST /mermas - Registrar una nueva merma y descontar del stock
  */
-mermasRouter.post("/", async (req, res) => {
+mermasRouter.post("/", requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const data = crearMermaSchema.parse(req.body);
     
@@ -81,7 +82,7 @@ mermasRouter.post("/", async (req, res) => {
 /**
  * PUT /mermas/:id - Actualizar una merma existente
  */
-mermasRouter.put("/:id", async (req, res) => {
+mermasRouter.put("/:id", requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const data = crearMermaSchema.parse(req.body);
@@ -337,7 +338,7 @@ mermasRouter.get("/:id", async (req, res) => {
 /**
  * DELETE /mermas/:id - Eliminar una merma (restaura el stock)
  */
-mermasRouter.delete("/:id", async (req, res) => {
+mermasRouter.delete("/:id", requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     

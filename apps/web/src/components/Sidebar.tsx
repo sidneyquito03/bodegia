@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Package, 
@@ -10,16 +10,20 @@ import {
   Menu,
   X,
   FileText,
-  Store
+  Store,
+  LogOut
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { logout } from "@/services/auth";
 
-const navItems = [
+const adminItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/inventario", icon: Package, label: "Inventario" },
   { to: "/pos", icon: ShoppingCart, label: "Punto de Venta" },
   { to: "/fiados", icon: Receipt, label: "Fiados" },
+  { to: "/historial-fiados", icon: Receipt, label: "Historial Fiados" },
   { to: "/reportes", icon: TrendingUp, label: "Reportes" },
   { to: "/reportes-sunat", icon: FileText, label: "Reportes SUNAT" },
   { to: "/proveedores", icon: Store, label: "Proveedores" },
@@ -27,8 +31,25 @@ const navItems = [
   { to: "/configuracion", icon: Settings, label: "Configuración" },
 ];
 
+const vendedorItems = [
+  { to: "/pos", icon: ShoppingCart, label: "Punto de Venta" },
+  { to: "/fiados", icon: Receipt, label: "Fiados" },
+];
+
 export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const isAdmin = user?.role === 'admin';
+  const navItems = isAdmin ? adminItems : vendedorItems;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  if (loading) return null;
 
   return (
     <>
@@ -53,7 +74,7 @@ export const Sidebar = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
               Bodegia
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">Gestión Inteligente</p>
+            <p className="text-xs text-muted-foreground mt-1">{isAdmin ? 'Administrador' : 'Vendedor'}</p>
           </div>
 
           {/* Navigation */}
@@ -79,7 +100,15 @@ export const Sidebar = () => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-red-600 hover:bg-red-50 font-medium"
+              title="Cerrar sesión"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Cerrar sesión</span>
+            </button>
             <p className="text-xs text-muted-foreground text-center">
               © 2025 Bodegia
             </p>

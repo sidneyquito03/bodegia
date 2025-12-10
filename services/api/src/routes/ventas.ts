@@ -21,7 +21,9 @@ const ventaSchema = z.object({
 /**
  * POST /ventas - Crear venta y descontar stock automáticamente
  */
-r.post("/", async (req, res) => {
+import { requireAuth } from "../middleware/auth";
+
+r.post("/", requireAuth, async (req, res) => {
   try {
     const data = ventaSchema.parse(req.body);
     
@@ -56,11 +58,13 @@ r.post("/", async (req, res) => {
         0
       );
       
+      // asociar vendedor si está autenticado
+      const currentUser = (req as any).user;
       const venta = await t.one(
-        `INSERT INTO ventas(total, metodo_pago, tipo, fecha)
-         VALUES($1, $2, $3, NOW())
-         RETURNING id, fecha, total, metodo_pago, tipo`,
-        [total, data.metodo_pago, data.tipo]
+        `INSERT INTO ventas(total, metodo_pago, tipo, fecha, vendedor_id)
+         VALUES($1, $2, $3, NOW(), $4)
+         RETURNING id, fecha, total, metodo_pago, tipo, vendedor_id`,
+        [total, data.metodo_pago, data.tipo, currentUser?.id ?? null]
       );
       
       // 3. Insertar detalle de venta

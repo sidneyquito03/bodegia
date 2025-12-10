@@ -50,7 +50,7 @@ const Inventario = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
-  const [ordenamiento, setOrdenamiento] = useState<string>("nombre-asc");
+  const [ordenamiento, setOrdenamiento] = useState<string>("created_at-desc");
   const [historialModalOpen, setHistorialModalOpen] = useState(false);
   const [productoHistorial, setProductoHistorial] = useState<{id: string; nombre: string} | null>(null);
   const [detalleModalOpen, setDetalleModalOpen] = useState(false);
@@ -143,6 +143,10 @@ const Inventario = () => {
           valorA = a.precio_venta;
           valorB = b.precio_venta;
           break;
+        case 'created_at':
+          valorA = (a as any).created_at ? new Date((a as any).created_at).getTime() : 0;
+          valorB = (b as any).created_at ? new Date((b as any).created_at).getTime() : 0;
+          break;
         default:
           return 0;
       }
@@ -153,7 +157,7 @@ const Inventario = () => {
     });
 
     return resultado;
-  }, [productos, searchTerm, filtroCategoria, filtroEstado, ordenamiento]);
+  }, [productos, searchTerm, filtroCategoria, filtroEstado, ordenamiento, clasificacionActiva]);
 
   const totalPaginas = Math.ceil(productosFiltradosYOrdenados.length / itemsPorPagina);
   const productosPaginados = productosFiltradosYOrdenados.slice(
@@ -317,10 +321,12 @@ const Inventario = () => {
               </Select>
 
               <Select value={ordenamiento} onValueChange={setOrdenamiento}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[220px]">
                   <SelectValue placeholder="Ordenar por" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="created_at-desc">🆕 Más Recientes Primero</SelectItem>
+                  <SelectItem value="created_at-asc">📅 Más Antiguos Primero</SelectItem>
                   <SelectItem value="nombre-asc">Nombre (A-Z)</SelectItem>
                   <SelectItem value="nombre-desc">Nombre (Z-A)</SelectItem>
                   <SelectItem value="stock-asc">Stock (Menor a Mayor)</SelectItem>
@@ -664,7 +670,7 @@ const Inventario = () => {
             
             {/* Contenido de Mermas */}
             <div className="p-6 pt-2">
-              <ControlMermas />
+              <ControlMermas clasificacionActiva={clasificacionActiva} />
             </div>
           </DialogContent>
         </Dialog>

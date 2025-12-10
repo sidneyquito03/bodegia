@@ -4,20 +4,21 @@ export type ItemVenta = {
   producto_id: string;
   nombre: string;
   cantidad: number;
-  precio: number;
+  precio_unitario: number;
 };
 
 export type CrearVentaDto = {
   items: ItemVenta[];
-  tipo: "efectivo" | "fiado";
+  metodo_pago?: "efectivo" | "tarjeta" | "yape" | "plin" | "transferencia";
+  tipo: "Cobrado" | "Fiado";
   cliente_id?: string;
 };
 
 export type VentaCreada = {
   id: string;
-  subtotal: number;
   total: number;
-  tipo: "efectivo" | "fiado";
+  metodo_pago: string;
+  tipo: "Cobrado" | "Fiado";
   cliente_id?: string | null;
   created_at: string;
 };

@@ -5,8 +5,8 @@ export type Periodo = "hoy" | "semana" | "mes" | "año";
 export type VentaDTO = {
   id: string;
   total: number;
-  tipo: "efectivo" | "fiado";
-  created_at: string;
+  tipo: "Cobrado" | "Fiado";
+  fecha: string;
   items?: any[];
 };
 

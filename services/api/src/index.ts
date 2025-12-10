@@ -9,6 +9,8 @@ import filesRouter from "./routes/files";
 import inventoryPriceHistory from "./routes/inventory-price-history";
 import inventoryCatRouter from "./routes/inventory-categories";
 import operatorsRouter from "./routes/operators";
+import authRouter from "./routes/auth";
+import usuariosRouter from "./routes/usuarios";
 import ventasRouter from "./routes/ventas";
 import dashboardRouter from "./routes/dashboard";
 import reportsSunatRouter from "./routes/reports.sunat";
@@ -24,6 +26,8 @@ app.use(express.json());
 
 app.use("/ai", aiRouter); // /ai/chat
 app.use("/ai/strategist", aiStrategist);
+app.use("/auth", authRouter);
+app.use("/usuarios", usuariosRouter);
 app.use("/fiados", fiadosRouter);
 app.use("/fiados/transacciones", fiadosTxRouter);
 app.use("/inventory", inventoryCatRouter);

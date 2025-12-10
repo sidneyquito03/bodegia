@@ -1,6 +1,7 @@
 import { Router } from "express";
 import db from "../db/index";
 import { z } from "zod";
+import { requireAuth, requireRole } from "../middleware/auth";
 
 export const comprasProvRouter = Router();
 
@@ -29,7 +30,7 @@ comprasProvRouter.get("/", async (req, res) => {
   res.json(rows);
 });
 
-comprasProvRouter.post("/", async (req, res) => {
+comprasProvRouter.post("/", requireAuth, requireRole('admin'), async (req, res) => {
   const c = compraSchema.parse(req.body);
   const nuevo = await db.one(
     `INSERT INTO compras_proveedores(

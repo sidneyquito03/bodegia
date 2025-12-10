@@ -2,6 +2,7 @@
 import { Router } from "express";
 import db from "../db/index";
 import { z } from "zod";
+import { requireAuth, requireRole } from "../middleware/auth";
 
 export const providersRouter = Router();
 
@@ -23,7 +24,7 @@ providersRouter.get("/", async (req, res) => {
   res.json(provs);
 });
 
-providersRouter.post("/", async (req, res) => {
+providersRouter.post("/", requireAuth, requireRole('admin'), async (req, res) => {
   const p = provSchema.parse(req.body);
   const nuevo = await db.one(
     `INSERT INTO proveedores(nombre,ruc,telefono,direccion,email,activo)
@@ -33,7 +34,7 @@ providersRouter.post("/", async (req, res) => {
   res.status(201).json(nuevo);
 });
 
-providersRouter.patch("/:id", async (req, res) => {
+providersRouter.patch("/:id", requireAuth, requireRole('admin'), async (req, res) => {
   const id = req.params.id;
   const p = provSchema.partial().parse(req.body);
   const act = await db.one(

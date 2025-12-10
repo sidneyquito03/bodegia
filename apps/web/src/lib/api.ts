@@ -1,4 +1,11 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
+    return window.__API_BASE_URL__;
+  }
+  return import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem('token');
@@ -10,7 +17,18 @@ export async function api<T = unknown>(path: string, init?: RequestInit): Promis
     },
     ...init,
   });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) {
+    // Try to parse error body for a helpful message
+    let body: any = undefined;
+    try {
+      body = await res.json();
+    } catch (_) {
+      body = await res.text().catch(() => undefined);
+    }
+    const msg = body && body.message ? body.message : typeof body === 'string' ? body : `API ${res.status}`;
+    throw new Error(msg);
+  }
+
   return (res.status === 204 ? undefined : await res.json()) as T;
 }
 

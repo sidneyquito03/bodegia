@@ -35,12 +35,48 @@ async function none(text: string, params?: any[]): Promise<void> {
   await pool.query(text, params);
 }
 
-/** Transacción simple */
-async function tx<T>(fn: (q: Pool) => Promise<T>): Promise<T> {
+/** Transacción con métodos de BD */
+interface TxContext {
+  one<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: any[]
+  ): Promise<T>;
+  oneOrNone<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: any[]
+  ): Promise<T | null>;
+  manyOrNone<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: any[]
+  ): Promise<T[]>;
+  none(text: string, params?: any[]): Promise<void>;
+}
+
+async function tx<T>(fn: (t: TxContext) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const res = await fn(client as unknown as Pool);
+    
+    const txContext: TxContext = {
+      async one<R extends QueryResultRow = QueryResultRow>(text: string, params?: any[]): Promise<R> {
+        const result = await client.query<R>(text, params);
+        if (result.rows.length === 0) throw new Error("No rows");
+        return result.rows[0];
+      },
+      async oneOrNone<R extends QueryResultRow = QueryResultRow>(text: string, params?: any[]): Promise<R | null> {
+        const result = await client.query<R>(text, params);
+        return result.rows[0] ?? null;
+      },
+      async manyOrNone<R extends QueryResultRow = QueryResultRow>(text: string, params?: any[]): Promise<R[]> {
+        const result = await client.query<R>(text, params);
+        return result.rows;
+      },
+      async none(text: string, params?: any[]): Promise<void> {
+        await client.query(text, params);
+      }
+    };
+    
+    const res = await fn(txContext);
     await client.query("COMMIT");
     return res;
   } catch (e) {

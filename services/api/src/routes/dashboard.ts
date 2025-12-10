@@ -1,84 +1,119 @@
 import { Router } from "express";
-
-/** Simuladores: reemplaza con tu DB cuando conectes Postgres */
-type Venta = { id:string; total:number; tipo:"efectivo"|"fiado"; created_at:string; items?: any[] };
-type Cliente = { id:string; nombre:string; celular?:string|null; deuda_total:number };
-type Producto = { id:string; nombre:string; codigo:string; stock:number };
-
-const ventas: Venta[] = [];        // llena con tu fuente real
-const clientes: Cliente[] = [];
-const productos: Producto[] = [];
+import db from "../db/index";
+import { requireAuth } from "../middleware/auth";
 
 const r = Router();
 
 /** KPIs del dashboard */
-r.get("/summary", (_req, res) => {
-  const inicioHoy = new Date(); inicioHoy.setHours(0,0,0,0);
-  const ventasHoy = ventas.filter(v => new Date(v.created_at) >= inicioHoy);
-  const ventaHoy = ventasHoy.reduce((s, v) => s + v.total, 0);
-
-  // Ganancia “rápida”: suponemos que cada venta trae en items precio_venta - precio_costo -> si no tienes items, deja 0
-  let gananciaHoy = 0;
-  for (const v of ventasHoy) {
-    if (Array.isArray(v.items)) {
-      for (const it of v.items) {
-        // si tu item trae costoUnitario, úsalo; si no, déjalo 0
-        const costo = Number(it.costo ?? 0);
-        gananciaHoy += (Number(it.precio) - costo) * Number(it.cantidad);
-      }
-    }
+r.get("/summary", requireAuth, async (req, res) => {
+  try {
+    console.log("[Dashboard] GET /summary - User:", (req as any).user);
+    
+    // Usar CURRENT_DATE de PostgreSQL (basado en la fecha del servidor)
+    // Las ventas de hoy son las del día actual en UTC
+    const ventasHoyRes = await db.manyOrNone(
+      `SELECT v.id, v.total, v.tipo, v.fecha, v.vendedor_id
+       FROM ventas v
+       WHERE DATE(v.fecha) = CURRENT_DATE
+         AND v.tipo = 'Cobrado'
+       ORDER BY v.fecha DESC`,
+      []
+    );
+    
+    console.log(`[Dashboard] Ventas encontradas hoy: ${ventasHoyRes.length}`, ventasHoyRes);
+    
+    const ventaHoy = ventasHoyRes.reduce((sum, v) => sum + Number(v.total), 0);
+    
+    console.log(`[Dashboard] Total venta hoy: ${ventaHoy}`);
+    
+    // Ganancia del día (venta_precio - costo)
+    const gananciaRes = await db.manyOrNone(
+      `SELECT (vd.precio_unitario - COALESCE(p.costo, 0)) * vd.cantidad as ganancia
+       FROM ventas v
+       JOIN ventas_detalle vd ON v.id = vd.venta_id
+       JOIN productos p ON vd.producto_id = p.id
+       WHERE DATE(v.fecha) = CURRENT_DATE
+         AND v.tipo = 'Cobrado'`,
+      []
+    );
+    
+    const gananciaHoy = gananciaRes.reduce((sum, row) => sum + Number(row.ganancia || 0), 0);
+    
+    console.log(`[Dashboard] Ganancia hoy: ${gananciaHoy}`);
+    
+    // Deuda total de clientes
+    const deudaRes = await db.oneOrNone(
+      `SELECT COALESCE(SUM(deuda_total), 0) as total_deuda FROM clientes`,
+      []
+    );
+    
+    const deudaTotal = deudaRes ? Number(deudaRes.total_deuda) : 0;
+    
+    // Alertas de stock bajo
+    const alertasRes = await db.manyOrNone(
+      `SELECT COUNT(*) as count FROM productos WHERE stock < 10`,
+      []
+    );
+    
+    const alertas = alertasRes[0] ? Number(alertasRes[0].count) : 0;
+    
+    res.json({
+      ventaHoy,
+      gananciaHoy,
+      deudaTotal,
+      alertas,
+      detallesVentas: ventasHoyRes,
+      detallesDeudas: [],
+      detallesAlertas: [],
+    });
+  } catch (error) {
+    console.error("Error en dashboard summary:", error);
+    res.status(500).json({ message: "Error al obtener resumen del dashboard" });
   }
-
-  const detallesDeudas = clientes.filter(c => Number(c.deuda_total) > 0);
-  const deudaTotal = detallesDeudas.reduce((s, c) => s + Number(c.deuda_total), 0);
-
-  const detallesAlertas = productos.filter(p => p.stock < 10);
-  const alertas = detallesAlertas.length;
-
-  res.json({
-    ventaHoy,
-    gananciaHoy,
-    deudaTotal,
-    alertas,
-    detallesVentas: ventasHoy,
-    detallesDeudas,
-    detallesAlertas,
-  });
 });
 
 /** Historial de ventas agrupado por día o mes */
-r.get("/sales", (req, res) => {
-  const fromISO = String(req.query.fromISO);
-  const toISO = String(req.query.toISO);
-  const groupBy = (String(req.query.groupBy) === "month" ? "month" : "day") as "day"|"month";
+r.get("/sales", requireAuth, async (req, res) => {
+  try {
+    const fromISO = String(req.query.fromISO);
+    const toISO = String(req.query.toISO);
+    const groupBy = String(req.query.groupBy) === "month" ? "month" : "day";
 
-  const from = new Date(fromISO);
-  const to = new Date(toISO);
+    const from = new Date(fromISO);
+    const to = new Date(toISO);
 
-  const inRange = ventas.filter(v => {
-    const d = new Date(v.created_at);
-    return d >= from && d <= to;
-  });
+    let groupColumn: string;
+    if (groupBy === "month") {
+      groupColumn = "DATE_TRUNC('month', v.fecha AT TIME ZONE 'UTC')::date";
+    } else {
+      groupColumn = "DATE(v.fecha AT TIME ZONE 'UTC')";
+    }
 
-  // agrupar
-  const map = new Map<string, { total:number; cobrado:number; fiado:number }>();
-  for (const v of inRange) {
-    const d = new Date(v.created_at);
-    const label =
-      groupBy === "month"
-        ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}` // YYYY-MM
-        : d.toISOString().slice(0,10); // YYYY-MM-DD
+    const sales = await db.manyOrNone(
+      `SELECT 
+        ${groupColumn} as label,
+        SUM(CASE WHEN v.tipo = 'Cobrado' THEN v.total ELSE 0 END) as cobrado,
+        SUM(CASE WHEN v.tipo = 'Fiado' THEN v.total ELSE 0 END) as fiado,
+        SUM(v.total) as total
+       FROM ventas v
+       WHERE v.fecha >= $1 AND v.fecha <= $2
+       GROUP BY ${groupColumn}
+       ORDER BY label ASC`,
+      [from, to]
+    );
 
-    const bucket = map.get(label) ?? { total:0, cobrado:0, fiado:0 };
-    bucket.total += v.total;
-    if (v.tipo === "efectivo") bucket.cobrado += v.total;
-    if (v.tipo === "fiado") bucket.fiado += v.total;
-    map.set(label, bucket);
+    const series = sales.map(row => ({
+      label: new Date(row.label).toISOString().slice(0, 10),
+      total: Number(row.total || 0),
+      cobrado: Number(row.cobrado || 0),
+      fiado: Number(row.fiado || 0),
+    }));
+
+    res.json(series);
+  } catch (error) {
+    console.error("Error en dashboard sales:", error);
+    res.status(500).json({ message: "Error al obtener historial de ventas" });
   }
-
-  const labels = Array.from(map.keys()).sort(); // orden cronológico
-  const series = labels.map(l => ({ label: l, ...map.get(l)! }));
-  res.json(series);
 });
 
 export default r;

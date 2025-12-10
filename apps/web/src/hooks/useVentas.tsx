@@ -10,15 +10,17 @@ export const useVentas = () => {
 
   const registrarVenta = async (
     items: ItemVenta[],
-    tipo: "efectivo" | "fiado",
-    clienteId?: string
+    tipo: "Cobrado" | "Fiado",
+    clienteId?: string,
+    metodoPago: "efectivo" | "tarjeta" | "yape" | "plin" | "transferencia" = "efectivo"
   ) => {
     setLoading(true);
     try {
       const res = await crearVenta({
         items,
         tipo,
-        cliente_id: tipo === "fiado" ? clienteId : undefined,
+        metodo_pago: metodoPago,
+        cliente_id: tipo === "Fiado" ? clienteId : undefined,
       });
 
       toast({

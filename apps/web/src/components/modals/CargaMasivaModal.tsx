@@ -8,6 +8,7 @@ import * as XLSX from "xlsx";
 import { importProductosJson} from "@/services/inventory";
 
 const FIELD_ALIASES: Record<string, string> = {
+  // Campos básicos obligatorios
   nombre: "nombre",
   "nombre*": "nombre",
   "* nombre": "nombre",
@@ -61,6 +62,7 @@ const FIELD_ALIASES: Record<string, string> = {
   "estado*": "estado",
   status: "estado",
 
+  // Campos opcionales básicos
   "fecha_vencimiento": "fecha_vencimiento",
   "fecha vencimiento": "fecha_vencimiento",
   "fecha vencimiento*": "fecha_vencimiento",
@@ -72,19 +74,116 @@ const FIELD_ALIASES: Record<string, string> = {
   "proveedor nombre": "proveedor_nombre",
   "proveedor id": "proveedor_id",
   "proveedor id / ruc": "proveedor_id",
+  
   marca: "marca",
   brand: "marca",
+  
   medida: "medida_peso",
   "medida / peso": "medida_peso",
   "medida/peso": "medida_peso",
   peso: "medida_peso",
   unidad: "medida_peso",
-  "stock critico": "stock_critico",
-  "stock crítico": "stock_critico",
+  
   "stock bajo": "stock_bajo",
+  "stock_bajo": "stock_bajo",
+  
   imagen: "imagen_url",
   "imagen url": "imagen_url",
   "url imagen": "imagen_url",
+  "imagen_url": "imagen_url",
+
+  // Campos específicos - ROPA/CALZADO
+  talla: "talla",
+  size: "talla",
+  
+  color: "color",
+  colour: "color",
+  
+  genero: "genero",
+  "género": "genero",
+  gender: "genero",
+  sexo: "genero",
+  
+  "tipo_tela": "tipo_tela",
+  "tipo tela": "tipo_tela",
+  tela: "tipo_tela",
+  material: "material",
+  
+  // Campos específicos - TECNOLOGÍA
+  garantia: "garantia_dias",
+  "garantía": "garantia_dias",
+  "garantia dias": "garantia_dias",
+  "garantía días": "garantia_dias",
+  "garantia_dias": "garantia_dias",
+  warranty: "garantia_dias",
+  
+  "detalles_clave": "detalles_clave",
+  "detalles clave": "detalles_clave",
+  detalles: "detalles_clave",
+  especificaciones: "detalles_clave",
+  
+  "especificacion_electrica": "especificacion_electrica",
+  "especificación eléctrica": "especificacion_electrica",
+  voltaje: "especificacion_electrica",
+  
+  // Campos específicos - LIBRERÍA
+  autor: "autor",
+  author: "autor",
+  escritor: "autor",
+  
+  editorial: "editorial",
+  publisher: "editorial",
+  
+  isbn: "isbn_ean",
+  "isbn_ean": "isbn_ean",
+  ean: "isbn_ean",
+  
+  "formato_libro": "formato_libro",
+  "formato libro": "formato_libro",
+  formato: "formato_libro",
+  
+  "numero_paginas": "numero_paginas",
+  "número páginas": "numero_paginas",
+  "numero paginas": "numero_paginas",
+  paginas: "numero_paginas",
+  pages: "numero_paginas",
+  
+  // Campos específicos - MASCOTAS
+  "tipo_mascota": "tipo_mascota",
+  "tipo mascota": "tipo_mascota",
+  mascota: "tipo_mascota",
+  pet: "tipo_mascota",
+  
+  // Campos específicos - BELLEZA/ASEO
+  "tono_aroma": "tono_aroma",
+  "tono aroma": "tono_aroma",
+  tono: "tono_aroma",
+  aroma: "tono_aroma",
+  fragancia: "tono_aroma",
+  
+  "tipo_piel_cabello": "tipo_piel_cabello",
+  "tipo piel cabello": "tipo_piel_cabello",
+  "tipo piel": "tipo_piel_cabello",
+  "tipo cabello": "tipo_piel_cabello",
+  
+  // Campos específicos - ABARROTES
+  "volumen_peso_neto": "volumen_peso_neto",
+  "volumen peso neto": "volumen_peso_neto",
+  "peso neto": "volumen_peso_neto",
+  volumen: "volumen_peso_neto",
+  
+  // Campos específicos - HOGAR
+  "alto_cm": "alto_cm",
+  alto: "alto_cm",
+  altura: "alto_cm",
+  
+  "ancho_cm": "ancho_cm",
+  ancho: "ancho_cm",
+  width: "ancho_cm",
+  
+  "profundo_cm": "profundo_cm",
+  profundidad: "profundo_cm",
+  depth: "profundo_cm",
 };
 
 function normalizeKey(k: string) {
@@ -152,6 +251,7 @@ function sanitizeRow(row: any) {
   }
 
   return {
+    // Campos obligatorios
     nombre: nombre,
     codigo: codigo,
     stock: stock,
@@ -159,6 +259,8 @@ function sanitizeRow(row: any) {
     precio_venta: precio_venta,
     categoria: categoria,
     estado: estado,
+    
+    // Campos opcionales básicos
     fecha_vencimiento: fechaVencimiento && !isNaN(fechaVencimiento.getTime()) 
       ? fechaVencimiento.toISOString().split('T')[0] 
       : null,
@@ -168,6 +270,40 @@ function sanitizeRow(row: any) {
     medida_peso: row.medida_peso ? String(row.medida_peso).trim() : null,
     stock_bajo: row.stock_bajo != null ? Number(row.stock_bajo) || 20 : 20,
     imagen_url: row.imagen_url ? String(row.imagen_url).trim() : null,
+    
+    // Campos específicos - ROPA/CALZADO
+    talla: row.talla ? String(row.talla).trim() : null,
+    color: row.color ? String(row.color).trim() : null,
+    genero: row.genero ? String(row.genero).trim() : null,
+    tipo_tela: row.tipo_tela ? String(row.tipo_tela).trim() : null,
+    
+    // Campos específicos - TECNOLOGÍA
+    garantia_dias: row.garantia_dias != null ? Number(row.garantia_dias) : null,
+    detalles_clave: row.detalles_clave ? String(row.detalles_clave).trim() : null,
+    especificacion_electrica: row.especificacion_electrica ? String(row.especificacion_electrica).trim() : null,
+    
+    // Campos específicos - LIBRERÍA
+    autor: row.autor ? String(row.autor).trim() : null,
+    editorial: row.editorial ? String(row.editorial).trim() : null,
+    isbn_ean: row.isbn_ean ? String(row.isbn_ean).trim() : null,
+    formato_libro: row.formato_libro ? String(row.formato_libro).trim() : null,
+    numero_paginas: row.numero_paginas != null ? Number(row.numero_paginas) : null,
+    
+    // Campos específicos - MASCOTAS
+    tipo_mascota: row.tipo_mascota ? String(row.tipo_mascota).trim() : null,
+    
+    // Campos específicos - BELLEZA/ASEO
+    tono_aroma: row.tono_aroma ? String(row.tono_aroma).trim() : null,
+    tipo_piel_cabello: row.tipo_piel_cabello ? String(row.tipo_piel_cabello).trim() : null,
+    
+    // Campos específicos - ABARROTES
+    volumen_peso_neto: row.volumen_peso_neto ? String(row.volumen_peso_neto).trim() : null,
+    
+    // Campos específicos - HOGAR/MUEBLES
+    material: row.material ? String(row.material).trim() : null,
+    alto_cm: row.alto_cm != null ? Number(row.alto_cm) : null,
+    ancho_cm: row.ancho_cm != null ? Number(row.ancho_cm) : null,
+    profundo_cm: row.profundo_cm != null ? Number(row.profundo_cm) : null,
   };
 }
 
@@ -184,17 +320,167 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
   const { toast } = useToast();
 
   const downloadTemplate = () => {
-    // Descargar plantilla Excel personalizada desde /public
-    const link = document.createElement('a');
-    link.href = '/plantilla_carga_masiva.xlsx';
-    link.download = 'plantilla_carga_masiva_bodegia.xlsx';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Crear workbook dinámicamente con TODOS los campos
+    const wb = XLSX.utils.book_new();
+    
+    // Encabezados completos - ordenados por importancia y clasificación
+    const headers = [
+      // Campos OBLIGATORIOS (marcados con *)
+      'NOMBRE*',
+      'CÓDIGO*',
+      'STOCK*',
+      'PRECIO_COSTO*',
+      'PRECIO_VENTA*',
+      'CATEGORÍA*',
+      'ESTADO',
+      
+      // Campos opcionales básicos
+      'FECHA_VENCIMIENTO',
+      'PROVEEDOR_ID',
+      'PROVEEDOR_NOMBRE',
+      'MARCA',
+      'MEDIDA_PESO',
+      'STOCK_BAJO',
+      'IMAGEN_URL',
+      
+      // ROPA/CALZADO
+      'TALLA',
+      'COLOR',
+      'GÉNERO',
+      'TIPO_TELA',
+      
+      // TECNOLOGÍA
+      'GARANTÍA_DÍAS',
+      'DETALLES_CLAVE',
+      'ESPECIFICACIÓN_ELÉCTRICA',
+      
+      // LIBRERÍA
+      'AUTOR',
+      'EDITORIAL',
+      'ISBN_EAN',
+      'FORMATO_LIBRO',
+      'NÚMERO_PÁGINAS',
+      
+      // MASCOTAS
+      'TIPO_MASCOTA',
+      
+      // BELLEZA/ASEO
+      'TONO_AROMA',
+      'TIPO_PIEL_CABELLO',
+      
+      // ABARROTES
+      'VOLUMEN_PESO_NETO',
+      
+      // HOGAR/MUEBLES
+      'MATERIAL',
+      'ALTO_CM',
+      'ANCHO_CM',
+      'PROFUNDO_CM',
+    ];
+    
+    // Fila de instrucciones
+    const instrucciones = [
+      '⚠️ INSTRUCCIONES: Los campos con * son OBLIGATORIOS. Complete según su clasificación de producto.',
+      'Ejemplo: Si vende ROPA, complete talla/color/género/tipo_tela. Si vende TECNOLOGÍA, complete garantía/detalles.',
+      'Fecha formato: DD/MM/AAAA o AAAA-MM-DD. Estado: Disponible/Agotado. Elimine estas 3 filas antes de importar.',
+      ...Array(headers.length - 3).fill('')
+    ];
+    
+    // Ejemplo de producto ROPA
+    const ejemploRopa = [
+      'Polo Algodón Pima',
+      'POLO-001',
+      '50',
+      '25.00',
+      '45.00',
+      'ropa',
+      'Disponible',
+      '',
+      '',
+      '',
+      'Nike',
+      'Unidad',
+      '10',
+      'https://ejemplo.com/imagen.jpg',
+      'M',
+      'Azul',
+      'Unisex',
+      'Algodón 100%',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ];
+    
+    // Ejemplo de producto TECNOLOGÍA
+    const ejemploTech = [
+      'Mouse Inalámbrico',
+      'TECH-001',
+      '30',
+      '45.00',
+      '89.90',
+      'tecnología',
+      'Disponible',
+      '',
+      '',
+      '',
+      'Logitech',
+      'Unidad',
+      '5',
+      'https://ejemplo.com/mouse.jpg',
+      '',
+      'Negro',
+      '',
+      '',
+      '365',
+      '2400 DPI, Bluetooth 5.0, Batería recargable',
+      '5V/1A USB-C',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ];
+    
+    // Crear worksheet con headers y ejemplos
+    const ws = XLSX.utils.aoa_to_sheet([
+      headers,
+      instrucciones,
+      ejemploRopa,
+      ejemploTech,
+    ]);
+    
+    // Estilizar (ancho de columnas)
+    ws['!cols'] = headers.map(() => ({ wch: 20 }));
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+    
+    // Descargar
+    XLSX.writeFile(wb, 'plantilla_carga_masiva_completa.xlsx');
     
     toast({
       title: "Plantilla descargada",
-      description: "Los campos con * son obligatorios. Complete primero esos campos.",
+      description: "Incluye TODOS los campos específicos por clasificación. Los campos con * son obligatorios.",
     });
   };
 
@@ -382,7 +668,17 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
                         <th className="text-left p-2">P. Costo</th>
                         <th className="text-left p-2">P. Venta</th>
                         <th className="text-left p-2">Categoría</th>
-                        <th className="text-left p-2">Vence</th>
+                        {/* Columnas dinámicas según datos disponibles */}
+                        {preview.some(p => p.talla) && <th className="text-left p-2">Talla</th>}
+                        {preview.some(p => p.color) && <th className="text-left p-2">Color</th>}
+                        {preview.some(p => p.genero) && <th className="text-left p-2">Género</th>}
+                        {preview.some(p => p.tipo_tela) && <th className="text-left p-2">Tipo Tela</th>}
+                        {preview.some(p => p.garantia_dias) && <th className="text-left p-2">Garantía</th>}
+                        {preview.some(p => p.autor) && <th className="text-left p-2">Autor</th>}
+                        {preview.some(p => p.editorial) && <th className="text-left p-2">Editorial</th>}
+                        {preview.some(p => p.isbn_ean) && <th className="text-left p-2">ISBN/EAN</th>}
+                        {preview.some(p => p.marca) && <th className="text-left p-2">Marca</th>}
+                        {preview.some(p => p.fecha_vencimiento) && <th className="text-left p-2">Vence</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -394,9 +690,16 @@ export const CargaMasivaModal = ({ isOpen, onClose, onSuccess }: Props) => {
                           <td className="p-2">S/. {item.precio_costo}</td>
                           <td className="p-2">S/. {item.precio_venta}</td>
                           <td className="p-2">{item.categoria}</td>
-                          <td className="p-2">
-                            {item.fecha_vencimiento?.substring(0, 10) ?? "-"}
-                          </td>
+                          {preview.some(p => p.talla) && <td className="p-2">{item.talla ?? '-'}</td>}
+                          {preview.some(p => p.color) && <td className="p-2">{item.color ?? '-'}</td>}
+                          {preview.some(p => p.genero) && <td className="p-2">{item.genero ?? '-'}</td>}
+                          {preview.some(p => p.tipo_tela) && <td className="p-2">{item.tipo_tela ?? '-'}</td>}
+                          {preview.some(p => p.garantia_dias) && <td className="p-2">{item.garantia_dias ? `${item.garantia_dias}d` : '-'}</td>}
+                          {preview.some(p => p.autor) && <td className="p-2">{item.autor ?? '-'}</td>}
+                          {preview.some(p => p.editorial) && <td className="p-2">{item.editorial ?? '-'}</td>}
+                          {preview.some(p => p.isbn_ean) && <td className="p-2">{item.isbn_ean ?? '-'}</td>}
+                          {preview.some(p => p.marca) && <td className="p-2">{item.marca ?? '-'}</td>}
+                          {preview.some(p => p.fecha_vencimiento) && <td className="p-2">{item.fecha_vencimiento?.substring(0, 10) ?? "-"}</td>}
                         </tr>
                       ))}
                     </tbody>

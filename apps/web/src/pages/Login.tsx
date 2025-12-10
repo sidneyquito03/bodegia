@@ -1,4 +1,5 @@
-/*import { useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { login } from '@/services/auth';
 
 export default function LoginPage() {
@@ -6,6 +7,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -14,41 +16,60 @@ export default function LoginPage() {
     try {
       const user = await login({ email, password });
       console.log('Logged as', user);
-      // TODO: redirigir, ej: navigate('/dashboard')
+      // El login ya guarda en localStorage, espera un tick y redirige
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
     } catch (e: any) {
-      setErr(e.message ?? 'Error');
+      setErr(e.message ?? 'Error de autenticación');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="max-w-sm mx-auto space-y-3 p-4">
-      <h1 className="text-xl font-semibold">Iniciar sesión</h1>
-      {err && <p className="text-red-600 text-sm">{err}</p>}
-      <input
-        className="border rounded w-full p-2"
-        type="email"
-        value={email}
-        onChange={e=>setEmail(e.target.value)}
-        placeholder="email@dominio.com"
-        required
-      />
-      <input
-        className="border rounded w-full p-2"
-        type="password"
-        value={password}
-        onChange={e=>setPassword(e.target.value)}
-        placeholder="••••••••"
-        required
-      />
-      <button
-        disabled={loading}
-        className="bg-black text-white px-4 py-2 rounded w-full disabled:opacity-60"
-      >
-        {loading ? 'Ingresando…' : 'Entrar'}
-      </button>
-    </form>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary-light/10">
+      <form onSubmit={onSubmit} className="max-w-sm mx-auto space-y-4 p-8 bg-card rounded-lg shadow-lg border border-border">
+        <h1 className="text-2xl font-bold text-center">Bodegia</h1>
+        <p className="text-center text-muted-foreground text-sm">Ingresa a tu cuenta</p>
+        
+        {err && <p className="text-red-600 text-sm bg-red-50 p-3 rounded">{err}</p>}
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Email</label>
+          <input
+            className="border border-border rounded w-full p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+            type="email"
+            value={email}
+            onChange={e=>setEmail(e.target.value)}
+            placeholder="admin@bodegia.local"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Contraseña</label>
+          <input
+            className="border border-border rounded w-full p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+            type="password"
+            value={password}
+            onChange={e=>setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        
+        <button
+          disabled={loading}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded w-full disabled:opacity-60 font-medium hover:bg-primary/90"
+        >
+          {loading ? 'Ingresando…' : 'Entrar'}
+        </button>
+        
+        <p className="text-xs text-center text-muted-foreground mt-4">
+          Demo: admin@bodegia.local / admin123
+        </p>
+      </form>
+    </div>
   );
 }
-*/

@@ -55,10 +55,12 @@ const Dashboard = () => {
   useEffect(() => {
     (async () => {
       try {
+        console.log("[Dashboard] Calling getDashboardSummary...");
         const data = await getDashboardSummary();
+        console.log("[Dashboard] Data received:", data);
         setKpis(data);
       } catch (e) {
-        console.error("getDashboardSummary:", e);
+        console.error("[Dashboard] getDashboardSummary error:", e);
       }
     })();
   }, []);
