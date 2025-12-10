@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
-import { Search, Plus, Minus, Trash2, Mic, MicOff, Barcode } from "lucide-react";
+import { Search, Plus, Minus, Trash2, Mic, MicOff, Barcode, CreditCard, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useInventario } from "@/hooks/useInventario";
 import { useVentas, ItemVenta } from "@/hooks/useVentas";
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+
 const POS = () => {
   const { productos } = useInventario();
   const { registrarVenta, loading } = useVentas();
@@ -33,15 +34,19 @@ const POS = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [fiadoDialogOpen, setFiadoDialogOpen] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState('');
+  const [metodoPago, setMetodoPago] = useState('efectivo');
   const [escuchando, setEscuchando] = useState(false);
   const [modoEscaneo, setModoEscaneo] = useState(false);
-  const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', celular: '' });
-  const [creandoCliente, setCreandoCliente] = useState(false);
   const recognitionRef = useRef<any>(null);
   const scanBufferRef = useRef<string>('');
 
+
   useEffect(() => {
-    // Inicializar reconocimiento de voz
+    cargarClientes();
+  }, []);
+
+
+  useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -54,7 +59,6 @@ const POS = () => {
           .map((result: any) => result[0])
           .map((result: any) => result.transcript)
           .join('');
-
         setSearchTerm(transcript);
       };
 
@@ -73,10 +77,8 @@ const POS = () => {
       };
     }
 
-    // Listener para escaneo de código de barras
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!modoEscaneo) return;
-
       if (e.key === 'Enter') {
         if (scanBufferRef.current) {
           buscarPorCodigo(scanBufferRef.current);
@@ -98,6 +100,7 @@ const POS = () => {
       }
     };
   }, [modoEscaneo]);
+
 
   const toggleVoz = () => {
     if (!recognitionRef.current) {
@@ -122,6 +125,7 @@ const POS = () => {
     }
   };
 
+
   const buscarPorCodigo = (codigo: string) => {
     const producto = productos.find(p => p.codigo.toLowerCase() === codigo.toLowerCase());
     if (producto) {
@@ -139,10 +143,12 @@ const POS = () => {
     }
   };
 
+
   const productosFiltrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.codigo.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   const agregarAlCarrito = (producto: any) => {
     const existe = carrito.find(item => item.producto_id === producto.id);
@@ -162,6 +168,7 @@ const POS = () => {
     }
   };
 
+
   const actualizarCantidad = (producto_id: string, nuevaCantidad: number) => {
     if (nuevaCantidad <= 0) {
       setCarrito(carrito.filter(item => item.producto_id !== producto_id));
@@ -174,42 +181,50 @@ const POS = () => {
     }
   };
 
+
   const eliminarDelCarrito = (producto_id: string) => {
     setCarrito(carrito.filter(item => item.producto_id !== producto_id));
   };
 
+
   const subtotal = carrito.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
+
 
   const handleCobrar = async () => {
     if (carrito.length === 0) return;
-    const success = await registrarVenta(carrito, 'Cobrado');
+    const success = await registrarVenta(carrito, 'Cobrado', undefined, metodoPago);
     if (success) {
       setCarrito([]);
+      setMetodoPago('efectivo');
     }
   };
 
+
   const handleFiar = async () => {
     if (carrito.length === 0 || !clienteSeleccionado) return;
-    const success = await registrarVenta(carrito, 'Fiado', clienteSeleccionado);
+    const success = await registrarVenta(carrito, 'Fiado', clienteSeleccionado, metodoPago);
     if (success) {
       setCarrito([]);
       setFiadoDialogOpen(false);
       setClienteSeleccionado('');
+      setMetodoPago('efectivo');
     }
   };
+
 
   return (
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
+        <div className="border-b pb-6">
           <h1 className="text-3xl font-bold">Punto de Venta</h1>
           <p className="text-muted-foreground mt-1">Registra ventas rápidamente</p>
         </div>
 
+
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Catálogo - 3 columnas */}
-          <Card className="lg:col-span-3 p-6 shadow-card">
+          <Card className="lg:col-span-3 p-6 border border-border/50">
             <div className="space-y-4">
               {/* Buscador con voz y escáner */}
               <div className="space-y-2">
@@ -258,12 +273,13 @@ const POS = () => {
                 )}
               </div>
 
+
               {/* Grid de productos */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto">
                 {productosFiltrados.map((producto) => (
                   <Card
                     key={producto.id}
-                    className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    className="p-4 hover:shadow-md transition-shadow cursor-pointer border border-border/50"
                     onClick={() => agregarAlCarrito(producto)}
                   >
                     <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden">
@@ -295,19 +311,75 @@ const POS = () => {
             </div>
           </Card>
 
+
           {/* Carrito - 2 columnas */}
-          <Card className="lg:col-span-2 p-6 shadow-card lg:sticky lg:top-8 h-fit">
+          <Card className="lg:col-span-2 p-6 border border-border/50 lg:sticky lg:top-8 h-fit">
             <h2 className="text-xl font-semibold mb-4">Carrito</h2>
             {carrito.length > 0 && (
-              <div className="mb-4 flex flex-col gap-2">
-                <Button variant="secondary" onClick={() => setFiadoDialogOpen(true)} disabled={loading}>
+              <div className="mb-4 flex flex-col gap-3">
+                {/* Selector de método de pago */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Método de Pago</label>
+                  <Select value={metodoPago} onValueChange={setMetodoPago}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="efectivo">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Efectivo
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="tarjeta">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Tarjeta
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="transferencia">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Transferencia
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="yape">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Yape
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="plin">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Plin
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Botones de acción */}
+                <Button 
+                  variant="secondary" 
+                  onClick={() => setFiadoDialogOpen(true)} 
+                  disabled={loading}
+                  className="w-full"
+                >
                   Fiar
                 </Button>
-                <Button variant="default" onClick={handleCobrar} disabled={loading}>
+                <Button 
+                  variant="default" 
+                  onClick={handleCobrar} 
+                  disabled={loading}
+                  className="w-full"
+                >
                   Cobrar
                 </Button>
               </div>
             )}
+
+            {/* Listado de productos */}
             <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto">
               {carrito.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -333,7 +405,7 @@ const POS = () => {
                       </Button>
                       <Input
                         type="number"
-                        className="w-16 text-center"
+                        className="w-16 text-center h-8"
                         value={item.cantidad}
                         onChange={(e) => actualizarCantidad(item.producto_id, Number(e.target.value))}
                       />
@@ -359,37 +431,62 @@ const POS = () => {
               )}
             </div>
 
+            {/* Totales */}
+            {carrito.length > 0 && (
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Subtotal:</span>
+                  <span className="font-semibold">S/. {subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Método:</span>
+                  <Badge variant="outline" className="capitalize">
+                    {metodoPago}
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+
             {/* --- MODAL SELECCIÓN DE CLIENTE PARA FIADO --- */}
             <Dialog open={fiadoDialogOpen} onOpenChange={setFiadoDialogOpen}>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Selecciona el cliente a fiar</DialogTitle>
                 </DialogHeader>
-                <Select value={clienteSeleccionado} onValueChange={setClienteSeleccionado}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes.filter(c => c.activo !== false).map(c => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nombre} ({c.celular})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  className="w-full mt-4"
-                  variant="secondary"
-                  onClick={handleFiar}
-                  disabled={!clienteSeleccionado || loading}
-                >
-                  Confirmar Fiado
-                </Button>
+                <div className="space-y-4">
+                  <Select value={clienteSeleccionado} onValueChange={setClienteSeleccionado}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.filter(c => c.activo !== false).map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.nombre} ({c.celular})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="bg-muted p-3 rounded-lg">
+                    <p className="text-sm font-medium mb-2">Total a Fiar:</p>
+                    <p className="text-2xl font-bold text-primary">S/. {subtotal.toFixed(2)}</p>
+                  </div>
+                  <Button
+                    className="w-full"
+                    variant="default"
+                    onClick={handleFiar}
+                    disabled={!clienteSeleccionado || loading}
+                  >
+                    Confirmar Fiado
+                  </Button>
+                </div>
               </DialogContent>
             </Dialog>
           </Card>
         </div>
       </div>
+
+      <ChatbotWidget />
     </Layout>
   );
 };

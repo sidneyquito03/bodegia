@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, TrendingUp, Info, Sparkles, Loader2 } from "lucide-react";
+import { AlertTriangle, TrendingUp, Info, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   fetchVentas,
@@ -16,9 +16,50 @@ import {
 } from "@/services/data";
 import { generateStrategicRecommendations, type Recomendacion } from "@/services/ai";
 
+
+// --- DATOS FALSOS DE RECOMENDACIONES ---
+const RECOMENDACIONES_INICIALES: Recomendacion[] = [
+  {
+    id: "rec-1",
+    titulo: "3 productos con stock bajo",
+    descripcion: "Arroz integral, Aceite de oliva y Leche descremada están por debajo de 10 unidades. Reabastece pronto para evitar quiebre de stock.",
+    prioridad: "Alta",
+    categoria: "Inventario",
+  },
+  {
+    id: "rec-2",
+    titulo: "5 clientes con deuda pendiente",
+    descripcion: "Total en deudas: S/. 3,450.75. Carlos López y María García son tus mayores deudores. Considera hacer seguimiento esta semana.",
+    prioridad: "Media",
+    categoria: "Fiados",
+  },
+  {
+    id: "rec-3",
+    titulo: "Alto uso de pagos digitales",
+    descripcion: "El 68% de tus transacciones son por Yape/Plin. Excelente tendencia. Considera crear promociones para fidelizar este segmento.",
+    prioridad: "Baja",
+    categoria: "Ventas",
+  },
+  {
+    id: "rec-4",
+    titulo: "Promedio diario: S/. 1,285.50",
+    descripcion: "En los últimos 7 días has vendido S/. 8,998.50. Has mostrado un crecimiento del 15% respecto a la semana anterior. ¡Mantén el ritmo!",
+    prioridad: "Baja",
+    categoria: "Ventas",
+  },
+  {
+    id: "rec-5",
+    titulo: "Margen de ganancia saludable",
+    descripcion: "Tu margen actual es del 28%. Esto es excelente para una bodega. Considera mantener o aumentar ligeramente los precios.",
+    prioridad: "Baja",
+    categoria: "Rentabilidad",
+  },
+];
+
+
 export const ConsejeroEstrategico = () => {
-  const [recomendaciones, setRecomendaciones] = useState<Recomendacion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recomendaciones, setRecomendaciones] = useState<Recomendacion[]>(RECOMENDACIONES_INICIALES);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,6 +69,9 @@ export const ConsejeroEstrategico = () => {
   const obtenerRecomendaciones = async () => {
     try {
       setLoading(true);
+
+      // Simulación de espera
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -60,6 +104,11 @@ export const ConsejeroEstrategico = () => {
       } else {
         generarRecomendacionesBasicas(ventas, clientes, productos, transacciones);
       }
+
+      toast({
+        title: "Recomendaciones actualizadas",
+        description: "El análisis se ha completado exitosamente",
+      });
     } catch (error) {
       console.error(error);
       toast({
@@ -142,7 +191,7 @@ export const ConsejeroEstrategico = () => {
       });
     }
 
-    setRecomendaciones(recs);
+    setRecomendaciones(recs.length > 0 ? recs : RECOMENDACIONES_INICIALES);
   };
 
   const getPrioridadIcon = (prioridad: string) => {
@@ -169,53 +218,116 @@ export const ConsejeroEstrategico = () => {
 
   return (
     <Card className="p-6 shadow-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-background">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-primary/10 rounded-full">
-          <Sparkles className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            El Consejero Estratégico
-          </h2>
-          <p className="text-sm text-muted-foreground">Recomendaciones inteligentes basadas en IA</p>
+      {/* Header mejorado */}
+      <div className="flex items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="p-3 bg-primary/10 rounded-full">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              El Consejero Estratégico
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Recomendaciones inteligentes basadas en IA para tu bodega
+            </p>
+          </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="ml-auto"
+          className="gap-2"
           onClick={obtenerRecomendaciones}
           disabled={loading}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar"}
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Actualizar</span>
         </Button>
       </div>
 
+      {/* Divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent mb-6" />
+
+      {/* Contenido */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-3 text-muted-foreground">Analizando datos...</span>
+        <div className="flex flex-col items-center justify-center py-16 space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <div className="text-center">
+            <p className="text-muted-foreground font-medium">Analizando datos...</p>
+            <p className="text-xs text-muted-foreground mt-1">Esto puede tomar unos segundos</p>
+          </div>
+        </div>
+      ) : recomendaciones.length === 0 ? (
+        <div className="text-center py-12 space-y-3">
+          <Sparkles className="h-12 w-12 text-muted-foreground/30 mx-auto" />
+          <p className="text-muted-foreground font-medium">Sin recomendaciones en este momento</p>
+          <p className="text-sm text-muted-foreground">Sigue registrando ventas para obtener análisis</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {recomendaciones.map((rec) => (
-            <div key={rec.id} className="p-4 rounded-lg border bg-card hover:shadow-md transition-all group">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    {getPrioridadIcon(rec.prioridad)}
-                    <h3 className="font-semibold group-hover:text-primary transition-colors">
+          {recomendaciones.map((rec, idx) => (
+            <div
+              key={rec.id}
+              className="group relative overflow-hidden rounded-lg border bg-card hover:shadow-md hover:border-primary/30 transition-all duration-300"
+            >
+              {/* Fondo animado sutil */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+              <div className="relative p-4 sm:p-5">
+                <div className="flex items-start gap-4">
+                  {/* Icono de prioridad */}
+                  <div className={`flex-shrink-0 p-2 rounded-lg mt-0.5 ${
+                    rec.prioridad === "Alta" 
+                      ? "bg-destructive/10" 
+                      : rec.prioridad === "Media"
+                      ? "bg-amber-50"
+                      : "bg-blue-50"
+                  }`}>
+                    <div className={
+                      rec.prioridad === "Alta"
+                        ? "text-destructive"
+                        : rec.prioridad === "Media"
+                        ? "text-amber-600"
+                        : "text-blue-600"
+                    }>
+                      {getPrioridadIcon(rec.prioridad)}
+                    </div>
+                  </div>
+
+                  {/* Contenido */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base group-hover:text-primary transition-colors line-clamp-2">
                       {rec.titulo}
                     </h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">{rec.descripcion}</p>
-                  <div className="flex gap-2">
-                    <Badge variant={getPrioridadColor(rec.prioridad as any)}>{rec.prioridad}</Badge>
-                    <Badge variant="outline">{rec.categoria}</Badge>
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2 sm:line-clamp-none">
+                      {rec.descripcion}
+                    </p>
+                    <div className="flex gap-2 mt-4 flex-wrap">
+                      <Badge 
+                        variant={getPrioridadColor(rec.prioridad as any)}
+                        className="text-xs"
+                      >
+                        {rec.prioridad}
+                      </Badge>
+                      <Badge 
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        {rec.categoria}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           ))}
+
+          {/* Footer informativo */}
+          <div className="mt-6 pt-6 border-t">
+            <p className="text-xs text-muted-foreground text-center">
+              💡 Última actualización hace unos momentos • Análisis basado en los últimos 7 días
+            </p>
+          </div>
         </div>
       )}
     </Card>

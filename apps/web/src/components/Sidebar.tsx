@@ -23,7 +23,6 @@ const adminItems = [
   { to: "/inventario", icon: Package, label: "Inventario" },
   { to: "/pos", icon: ShoppingCart, label: "Punto de Venta" },
   { to: "/fiados", icon: Receipt, label: "Fiados" },
-  { to: "/historial-fiados", icon: Receipt, label: "Historial Fiados" },
   { to: "/reportes", icon: TrendingUp, label: "Reportes" },
   { to: "/reportes-sunat", icon: FileText, label: "Reportes SUNAT" },
   { to: "/proveedores", icon: Store, label: "Proveedores" },
